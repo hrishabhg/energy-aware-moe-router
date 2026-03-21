@@ -1,0 +1,46 @@
+# ============================================================
+# Energy-Aware MoE Router — Conda Environment (Local / Mac)
+# ============================================================
+# conda env create -f environment.yml
+# conda activate energy-moe
+#   ============================================================
+
+name: energy-moe
+channels:
+  - pytorch
+  - conda-forge
+
+dependencies:
+  - python=3.11
+  - pip>=24.0
+
+  # Core ML
+  - pytorch>=2.5.0
+  - torchvision>=0.20.0
+  - torchaudio>=2.5.0
+
+  # Scientific stack
+  - numpy>=1.26.0,<2.1.0
+  - pandas>=2.1.0
+  - scipy>=1.12.0
+  - scikit-learn>=1.4.0
+
+  # Visualization
+  - matplotlib>=3.8.0
+  - seaborn>=0.13.0
+
+  # Utilities
+  - pyyaml>=6.0
+  - tqdm>=4.66.0
+  - psutil>=5.9.0
+
+  # pip-only packages (not on conda-forge or need specific versions)
+  - pip:
+      - transformers>=4.46.0,<4.50.0
+      - tokenizers>=0.20.0
+      - sentencepiece>=0.2.0
+      - datasets>=3.0.0,<4.0.0
+      - evaluate>=0.4.0
+      - wandb>=0.18.0
+      - omegaconf>=2.3.0
+      - rich>=13.0.0

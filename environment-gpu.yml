@@ -1,0 +1,57 @@
+# ============================================================
+# Energy-Aware MoE Router — Conda Environment (RunPod / GPU)
+# ============================================================
+# conda env create -f environment-gpu.yml
+# conda activate energy-moe
+# ============================================================
+
+name: energy-moe
+channels:
+  - nvidia
+  - pytorch
+  - conda-forge
+
+dependencies:
+  - python=3.11
+  - pip>=24.0
+
+  # CUDA toolkit — needed by DeepSpeed's JIT kernel compilation
+  - cuda-toolkit=12.4
+
+  # C++ compiler for DeepSpeed ops
+  - gxx_linux-64>=12.0
+
+  # Core ML (CUDA build)
+  - pytorch::pytorch=2.5.1=*cuda12.4*
+  - pytorch::torchvision=0.20.1=*cuda12.4*
+  - pytorch::torchaudio=2.5.1=*cuda12.4*
+
+  # Scientific stack
+  - numpy>=1.26.0,<2.1.0
+  - pandas>=2.1.0
+  - scipy>=1.12.0
+  - scikit-learn>=1.4.0
+
+  # Visualization
+  - matplotlib>=3.8.0
+  - seaborn>=0.13.0
+
+  # Utilities
+  - pyyaml>=6.0
+  - tqdm>=4.66.0
+  - psutil>=5.9.0
+
+  # pip-only packages
+  - pip:
+      - transformers>=4.46.0,<4.50.0
+      - tokenizers>=0.20.0
+      - sentencepiece>=0.2.0
+      - datasets>=3.0.0,<4.0.0
+      - evaluate>=0.4.0
+      - wandb>=0.18.0
+      - omegaconf>=2.3.0
+      - rich>=13.0.0
+      # GPU-only
+      - deepspeed>=0.15.0,<0.17.0
+      - nvidia-ml-py>=12.560.30
+      - pynvml>=11.5.0
