@@ -1,0 +1,1595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paper Learnings — Visual Guide</title>
+<style>
+  :root {
+    --bg: #f8f9fc;
+    --surface: #ffffff;
+    --surface2: #f0f2f7;
+    --border: #d8dce6;
+    --text: #1e2432;
+    --text-dim: #636b82;
+    --accent: #3b5ccc;
+    --accent-dim: #8da4e8;
+    --green: #16804a;
+    --red: #c93b3b;
+    --orange: #c46b1a;
+    --yellow: #916b0a;
+    --purple: #7143c6;
+    --cyan: #0e7d8e;
+    --pink: #c2437a;
+    --pillar-arch: #2563eb;
+    --pillar-analysis: #7c3aed;
+    --pillar-green: #059669;
+    --pillar-cross: #d97706;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── Layout: sidebar + main ── */
+  .app-layout { display: flex; min-height: 100vh; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 260px; min-width: 260px; background: #ffffff;
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    position: sticky; top: 0; height: 100vh; overflow: hidden;
+  }
+  .sidebar-header {
+    padding: 20px 18px 14px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(135deg, #eef1f8 0%, #e4e8f4 100%);
+  }
+  .sidebar-header h1 {
+    font-size: 15px; font-weight: 700; letter-spacing: -0.2px;
+    background: linear-gradient(135deg, var(--accent), var(--cyan));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .sidebar-header p { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+
+  /* ── Info bar ── */
+  .info-bar {
+    padding: 8px 14px; font-size: 10px; color: var(--text-dim);
+    background: #f5f0e0; border-bottom: 1px solid #e8dfc8;
+    line-height: 1.4;
+  }
+  .info-bar strong { color: #7a6520; }
+
+  /* ── Sidebar nav ── */
+  .sidebar-nav {
+    flex: 1; overflow-y: auto; padding: 8px 0;
+    scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+  }
+  .sidebar-nav::-webkit-scrollbar { width: 4px; }
+  .sidebar-nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .pillar-group { margin-bottom: 4px; }
+  .pillar-label {
+    font-size: 9px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 1px; padding: 10px 18px 4px; color: var(--text-dim);
+  }
+
+  .tab-btn {
+    display: flex; align-items: center; gap: 8px;
+    width: 100%; padding: 8px 18px; font-size: 12px; font-weight: 500;
+    background: transparent; color: var(--text-dim);
+    border: none; border-left: 3px solid transparent;
+    cursor: pointer; transition: all 0.15s; text-align: left;
+  }
+  .tab-btn:hover { color: var(--text); background: var(--surface2); }
+  .tab-btn.active {
+    color: var(--accent); background: rgba(59,92,204,.05);
+    border-left-color: var(--accent); font-weight: 600;
+  }
+  .tab-btn .num {
+    font-size: 10px; font-weight: 700; width: 22px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px; background: var(--surface2); flex-shrink: 0;
+  }
+  .tab-btn.active .num { background: rgba(59,92,204,.12); color: var(--accent); }
+  .tab-btn .pill {
+    display: none; /* hidden in sidebar — pillar group label does the job */
+  }
+
+  /* ── Main content ── */
+  .content {
+    flex: 1; height: 100vh; overflow-y: auto;
+    padding: 0;
+  }
+  .tab-panel {
+    max-width: 940px; margin: 0 auto; padding: 28px 36px 60px;
+  }
+  .diagram-box svg, .synth-chart svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+
+  /* ── RQ Filter chips ── */
+  .filter-bar {
+    padding: 10px 14px 12px; border-bottom: 1px solid var(--border);
+    background: #fafbfd;
+  }
+  .filter-label {
+    font-size: 9px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--text-dim); margin-bottom: 6px;
+  }
+  .filter-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+  .chip {
+    font-size: 10px; font-weight: 700; padding: 4px 9px;
+    border-radius: 12px; background: var(--surface2); color: var(--text-dim);
+    border: 1px solid var(--border); cursor: pointer; transition: all 0.15s;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chip.active {
+    background: var(--accent); color: #ffffff; border-color: var(--accent);
+  }
+  .tab-btn.hidden { display: none; }
+  .pillar-group.empty { display: none; }
+
+  /* ── Plain Language box ── */
+  .plain-box {
+    background: linear-gradient(135deg, rgba(113,67,198,.06), rgba(59,92,204,.03));
+    border-left: 3px solid var(--purple);
+    border-radius: 0 8px 8px 0; padding: 16px 18px; margin: 12px 0;
+  }
+  .plain-box strong {
+    color: var(--purple); font-size: 12px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .plain-box p { font-size: 13px; margin-top: 6px; line-height: 1.65; }
+
+  /* ── Research Gap box (Green AI papers) ── */
+  .gap-box {
+    background: rgba(22,128,74,.05);
+    border-left: 3px solid var(--green);
+    border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 12px 0;
+  }
+  .gap-box strong {
+    color: var(--green); font-size: 12px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .gap-box p { font-size: 12px; margin-top: 4px; line-height: 1.55; color: var(--text); }
+
+  /* ── Synthesis panel ── */
+  .synth-hero {
+    background: linear-gradient(135deg, #eef1f8 0%, #e4e8f4 100%);
+    border: 1px solid var(--border); border-radius: 12px;
+    padding: 24px 28px; margin-bottom: 20px;
+  }
+  .synth-hero h2 {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.4px;
+    background: linear-gradient(135deg, var(--accent), var(--cyan));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .synth-hero p { font-size: 13px; color: var(--text-dim); margin-top: 6px; }
+  .synth-chart {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px; margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .synth-chart h3 {
+    font-size: 13px; font-weight: 700; margin-bottom: 4px; color: var(--text);
+  }
+  .synth-chart .subtitle {
+    font-size: 11px; color: var(--text-dim); margin-bottom: 14px;
+  }
+  .synth-chart .legend {
+    display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px;
+    font-size: 10px; color: var(--text-dim); justify-content: center;
+  }
+  .synth-chart .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .synth-chart .legend .sw {
+    width: 10px; height: 10px; border-radius: 2px; display: inline-block;
+  }
+  .tab-btn.synth-btn {
+    margin: 4px 0 8px; border-left-color: var(--cyan);
+    background: linear-gradient(90deg, rgba(14,125,142,.06), transparent);
+    color: var(--cyan); font-weight: 700;
+  }
+  .tab-btn.synth-btn.active {
+    background: linear-gradient(90deg, rgba(14,125,142,.12), transparent);
+    border-left-color: var(--cyan); color: var(--cyan);
+  }
+  .tab-btn.synth-btn .num { background: rgba(14,125,142,.12); color: var(--cyan); }
+
+  /* pills still defined for badge row in paper content */
+  .pill-arch { background: rgba(37,99,235,.1); color: var(--pillar-arch); }
+  .pill-analysis { background: rgba(124,58,237,.1); color: var(--pillar-analysis); }
+  .pill-green { background: rgba(5,150,105,.1); color: var(--pillar-green); }
+  .pill-cross { background: rgba(217,119,6,.1); color: var(--pillar-cross); }
+  .tab-panel { display: none; animation: fadeIn 0.3s ease; }
+  .tab-panel.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── Paper header ── */
+  .paper-header {
+    display: flex; align-items: flex-start; gap: 16px; margin-bottom: 24px;
+    padding-bottom: 20px; border-bottom: 1px solid var(--border);
+  }
+  .paper-num {
+    font-size: 32px; font-weight: 800; line-height: 1;
+    min-width: 56px; text-align: center; padding-top: 4px;
+  }
+  .paper-meta h2 { font-size: 18px; font-weight: 700; line-height: 1.3; }
+  .paper-meta .authors { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
+  .badge-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .badge {
+    font-size: 10px; font-weight: 700; padding: 3px 8px;
+    border-radius: 4px; letter-spacing: 0.3px; text-transform: uppercase;
+  }
+  .badge-venue { background: rgba(59,92,204,.08); color: var(--accent); }
+  .badge-year { background: var(--surface2); color: var(--text-dim); }
+  .badge-relevance { background: rgba(22,128,74,.08); color: var(--green); }
+  .badge-tool {
+    background: rgba(196,107,26,.1); color: var(--orange);
+    border: 1px solid rgba(196,107,26,.25);
+  }
+  .tab-btn .tool-dot {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--orange); margin-left: 4px;
+  }
+
+  /* ── Stars ── */
+  .stars { color: #b8860b; letter-spacing: 1px; font-size: 12px; }
+  .stars-dim { color: #d8dce6; }
+
+  /* ── Sections ── */
+  .section {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px; margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .section-title {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--text-dim); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title .icon { font-size: 14px; }
+
+  /* ── SVG Diagram area ── */
+  .diagram-box {
+    background: #f5f6fa; border: 1px solid var(--border);
+    border-radius: 8px; padding: 20px; margin: 12px 0;
+    overflow-x: auto;
+  }
+  .diagram-box svg { display: block; margin: 0 auto; }
+
+  /* ── RQ Tags ── */
+  .rq-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+  .rq-tag {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; flex: 1; min-width: 200px;
+  }
+  .rq-tag strong { font-size: 12px; display: block; margin-bottom: 4px; }
+  .rq-tag p { font-size: 11px; color: var(--text-dim); line-height: 1.5; }
+  .rq-tag.active { border-color: var(--accent); background: rgba(59,92,204,.05); }
+  .rq-tag.active strong { color: var(--accent); }
+
+  /* ── Critique / Limitation pills ── */
+  .crit-list { display: flex; flex-direction: column; gap: 8px; }
+  .crit-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 14px; border-radius: 8px;
+    background: var(--surface2); font-size: 13px;
+  }
+  .crit-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .crit-text { line-height: 1.5; }
+
+  /* ── Insight box ── */
+  .insight-box {
+    background: linear-gradient(135deg, rgba(59,92,204,.05), rgba(14,125,142,.03));
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0; padding: 16px 18px; margin: 12px 0;
+  }
+  .insight-box strong { color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .insight-box p { font-size: 13px; margin-top: 6px; line-height: 1.6; }
+
+  /* ── Duplicity box ── */
+  .dup-box {
+    background: rgba(196,107,26,.05);
+    border-left: 3px solid var(--orange);
+    border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 12px 0;
+  }
+  .dup-box strong { color: var(--orange); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .dup-box p { font-size: 13px; margin-top: 4px; line-height: 1.5; color: var(--text-dim); }
+
+  /* ── Key result stat ── */
+  .stats-row { display: flex; gap: 12px; flex-wrap: wrap; margin: 8px 0; }
+  .stat-card {
+    background: var(--surface2); border-radius: 8px; padding: 14px 18px;
+    flex: 1; min-width: 140px; text-align: center;
+  }
+  .stat-val { font-size: 22px; font-weight: 800; line-height: 1.2; }
+  .stat-label { font-size: 10px; color: var(--text-dim); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* ── Formula display ── */
+  .formula {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 15px;
+    background: #f0f2f7; border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px 20px; text-align: center;
+    margin: 12px 0; letter-spacing: 0.5px; color: var(--cyan);
+  }
+  .formula .highlight { color: #b45309; font-weight: 700; }
+  .formula .dim { color: var(--text-dim); }
+
+  /* ── Nav arrows ── */
+  .nav-row { display: flex; justify-content: space-between; margin-top: 24px; }
+  .nav-btn {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 20px; color: var(--text);
+    cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s;
+  }
+  .nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .nav-btn:disabled { opacity: 0.3; cursor: default; }
+
+  /* SVG text */
+  .svg-text { fill: #1e2432; font-family: 'Inter', sans-serif; }
+  .svg-text-dim { fill: #636b82; font-family: 'Inter', sans-serif; }
+  .svg-text-accent { fill: #3b5ccc; font-family: 'Inter', sans-serif; }
+  .svg-text-green { fill: #16804a; font-family: 'Inter', sans-serif; }
+  .svg-text-red { fill: #c93b3b; font-family: 'Inter', sans-serif; }
+  .svg-text-yellow { fill: #916b0a; font-family: 'Inter', sans-serif; }
+  .svg-text-cyan { fill: #0e7d8e; font-family: 'Inter', sans-serif; }
+  .svg-text-orange { fill: #c46b1a; font-family: 'Inter', sans-serif; }
+  .svg-text-purple { fill: #7143c6; font-family: 'Inter', sans-serif; }
+</style>
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h1>Paper Learnings</h1>
+      <p>Energy-Aware MoE &middot; M1 &middot; 15 Papers</p>
+    </div>
+    <div class="info-bar">
+      <strong>Ordering:</strong> Papers numbered 1–15 as listed in the roadmap reading list. Grouped by research pillar for navigation — <em>A: MoE Architecture, B: MoE Analysis, C: Green AI / Energy, D: Cross-cutting.</em>
+    </div>
+    <div class="filter-bar">
+      <div class="filter-label">Filter by Research Question</div>
+      <div class="filter-chips" id="filterChips">
+        <button class="chip active" data-filter="all">All</button>
+        <button class="chip" data-filter="RQ1">RQ1</button>
+        <button class="chip" data-filter="RQ2">RQ2</button>
+        <button class="chip" data-filter="RQ3">RQ3</button>
+        <button class="chip" data-filter="tool">🛠 Tool/Utility Only</button>
+      </div>
+    </div>
+    <div class="sidebar-nav" id="tabBar"></div>
+  </div>
+  <div class="content" id="content"></div>
+</div>
+
+<script>
+const papers = [
+  {
+    id: 1, shortName: "Shazeer '17", pillar: "arch", pillarLabel: "MoE Arch",
+    title: "Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer",
+    authors: "Shazeer, Mirhoseini, Maziarz, Davis, Le, Hinton, Dean",
+    year: 2017, venue: "ICLR", relevance: 5,
+    stats: [
+      { val: "137B", label: "Parameters" },
+      { val: "4096", label: "Max Experts" },
+      { val: "-24%", label: "PPL vs Dense" },
+      { val: "+1.34", label: "BLEU En→Fr" }
+    ],
+    formula: 'G(x) = Softmax( TopK( H(x) + <span class="highlight">noise</span>, k ) )',
+    formulaNote: "We replace noise with −λ·e_gpu",
+    summary: "Introduces the foundational MoE gating equation with noisy top-k selection over N experts. Two auxiliary losses — importance loss (even gate-value sums) and load loss (even token counts) — prevent expert collapse. Scales to 137B parameters / 4096 experts on LSTM-based LM and MT.",
+    insight: "The noisy additive term before softmax+top-k is the exact architectural hook we exploit — we replace Gaussian noise with −λ·e_gpu, making the energy penalty structurally analogous to the exploration noise. The importance + load losses are preconditions for our energy penalty: without balanced experts, energy-aware redistribution is meaningless.",
+    limitations: [
+      { icon: "⚠️", text: "LSTM-based architecture — does not directly apply to modern Transformers" },
+      { icon: "🔋", text: "No energy or power consumption analysis whatsoever" },
+      { icon: "⚖️", text: "Load balancing is fragile — without auxiliary losses, experts collapse" },
+      { icon: "📊", text: "No analysis of what linguistic properties different experts learn" }
+    ],
+    rqTags: ["RQ1", "RQ2", "RQ3"],
+    rqExplain: {
+      RQ1: "Defines the baseline gating equation we modify with λ·e_gpu. The Pareto frontier starts from this architecture.",
+      RQ2: "Noisy top-k adds exploration — our energy penalty biases which experts get explored, potentially routing simpler tokens to low-power GPUs.",
+      RQ3: "Load balance losses are preconditions for meaningful GLUE evaluation under energy constraints."
+    },
+    duplicity: null,
+    diagram: `<svg width="680" height="300" viewBox="0 0 680 300">
+      <defs>
+        <marker id="arr1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6Z" fill="#4a6fd9"/></marker>
+      </defs>
+      <!-- Left: Standard Gating -->
+      <text x="160" y="24" text-anchor="middle" class="svg-text" font-size="13" font-weight="700">Standard Noisy Top-k Gating</text>
+      <rect x="100" y="40" width="120" height="32" rx="6" fill="none" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="160" y="60" text-anchor="middle" class="svg-text" font-size="12">Token x</text>
+      <line x1="160" y1="72" x2="160" y2="92" stroke="#4a6fd9" marker-end="url(#arr1)"/>
+      <rect x="80" y="95" width="160" height="36" rx="6" fill="rgba(59,130,246,0.1)" stroke="#3b82f6" stroke-width="1"/>
+      <text x="160" y="117" text-anchor="middle" class="svg-text" font-size="12">H(x) = x · W_g + ε</text>
+      <text x="250" y="117" class="svg-text-dim" font-size="10">← Gaussian noise</text>
+      <line x1="160" y1="131" x2="160" y2="151" stroke="#4a6fd9" marker-end="url(#arr1)"/>
+      <rect x="95" y="155" width="130" height="32" rx="6" fill="rgba(59,130,246,0.15)" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="160" y="175" text-anchor="middle" class="svg-text" font-size="12">TopK → Softmax</text>
+      <line x1="160" y1="187" x2="160" y2="207" stroke="#4a6fd9" marker-end="url(#arr1)"/>
+      <text x="160" y="225" text-anchor="middle" class="svg-text-dim" font-size="11">Route to k experts</text>
+      <rect x="60" y="245" width="200" height="28" rx="6" fill="rgba(139,92,246,0.1)" stroke="#6d3fc4" stroke-width="1"/>
+      <text x="160" y="264" text-anchor="middle" class="svg-text-purple" font-size="11">L = L_task + α·L_balance</text>
+
+      <!-- Divider -->
+      <line x1="340" y1="30" x2="340" y2="280" stroke="#c8cdd8" stroke-width="1" stroke-dasharray="4,4"/>
+
+      <!-- Right: Our Modification -->
+      <text x="510" y="24" text-anchor="middle" class="svg-text-cyan" font-size="13" font-weight="700">Our Energy-Aware Gating</text>
+      <rect x="450" y="40" width="120" height="32" rx="6" fill="none" stroke="#1096a8" stroke-width="1.5"/>
+      <text x="510" y="60" text-anchor="middle" class="svg-text" font-size="12">Token x</text>
+      <line x1="510" y1="72" x2="510" y2="92" stroke="#1096a8" marker-end="url(#arr1)"/>
+      <rect x="410" y="95" width="200" height="36" rx="6" fill="rgba(34,211,238,0.1)" stroke="#1096a8" stroke-width="1"/>
+      <text x="510" y="117" text-anchor="middle" class="svg-text" font-size="12">x · W_g − <tspan class="svg-text-yellow" font-weight="700">λ · e_gpu</tspan></text>
+      <text x="620" y="107" class="svg-text-yellow" font-size="10">← energy</text>
+      <text x="620" y="121" class="svg-text-yellow" font-size="10">   penalty</text>
+      <line x1="510" y1="131" x2="510" y2="151" stroke="#1096a8" marker-end="url(#arr1)"/>
+      <rect x="445" y="155" width="130" height="32" rx="6" fill="rgba(34,211,238,0.15)" stroke="#1096a8" stroke-width="1.5"/>
+      <text x="510" y="175" text-anchor="middle" class="svg-text" font-size="12">TopK → Softmax</text>
+      <line x1="510" y1="187" x2="510" y2="207" stroke="#1096a8" marker-end="url(#arr1)"/>
+      <text x="510" y="225" text-anchor="middle" class="svg-text-green" font-size="11">Prefer low-power GPUs</text>
+      <rect x="390" y="245" width="240" height="28" rx="6" fill="rgba(74,222,128,0.1)" stroke="#22a858" stroke-width="1"/>
+      <text x="510" y="264" text-anchor="middle" class="svg-text-green" font-size="11">L = L_task + α·L_balance + β·L_energy</text>
+    </svg>`
+  },
+  {
+    id: 2, shortName: "Fedus '22", pillar: "arch", pillarLabel: "MoE Arch",
+    title: "Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity",
+    authors: "Fedus, Zoph, Shazeer", year: 2022, venue: "JMLR", relevance: 5,
+    stats: [
+      { val: "1.6T", label: "Parameters" },
+      { val: "7×", label: "Speedup vs T5" },
+      { val: "k=1", label: "Routing" },
+      { val: "C4", label: "Dataset" }
+    ],
+    formula: 'g(x) = Softmax( x · W_g ) &nbsp;→&nbsp; route to <span class="highlight">argmax</span> (k=1)',
+    formulaNote: "Simplified to single expert per token",
+    summary: "Simplifies MoE to k=1 (single expert per token) inside a Transformer. Trained on C4 — the same dataset we use. Achieves 7× pre-training speedup over T5-Base with the same compute. Introduces a simplified load-balancing loss and a capacity factor to handle expert buffer overflow.",
+    insight: "This is our λ=0 baseline — a standard Switch Transformer with no energy penalty. Direct perplexity comparison on C4 is possible. The k=1 routing simplifies energy accounting: each token's energy cost maps to exactly one expert's GPU.",
+    limitations: [
+      { icon: "💥", text: "Training instability at large scale with fp16 — requires bf16 or careful mixed-precision" },
+      { icon: "🗑️", text: "Token dropping under high load — capacity factor tuning is brittle" },
+      { icon: "🔋", text: "No energy or power analysis despite clear efficiency implications" },
+      { icon: "📉", text: "Expert utilization can be uneven despite balance loss" }
+    ],
+    rqTags: ["RQ1", "RQ2", "RQ3"],
+    rqExplain: {
+      RQ1: "Direct λ=0 baseline on C4. Our Pareto frontier plots energy-aware (λ>0) against this exact model.",
+      RQ2: "k=1 means each token → one expert → one GPU. Simpler tokens should be redirectable to low-power GPUs.",
+      RQ3: "Baseline GLUE score establishes the quality ceiling before energy penalty degrades downstream."
+    },
+    duplicity: "Shares gating fundamentals with [1] Shazeer; the load loss is a simplified variant of [1]'s importance+load pair. Capacity-factor overflow handling not present in [1].",
+    diagram: `<svg width="680" height="260" viewBox="0 0 680 260">
+      <defs><marker id="arr2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6Z" fill="#4a6fd9"/></marker></defs>
+      <text x="340" y="20" text-anchor="middle" class="svg-text" font-size="13" font-weight="700">Switch Layer: k=1 Routing</text>
+      <!-- Token -->
+      <rect x="280" y="35" width="120" height="28" rx="6" fill="rgba(59,130,246,0.1)" stroke="#3b82f6"/>
+      <text x="340" y="54" text-anchor="middle" class="svg-text" font-size="12">Token x</text>
+      <line x1="340" y1="63" x2="340" y2="80" stroke="#4a6fd9" marker-end="url(#arr2)"/>
+      <!-- Router -->
+      <rect x="270" y="83" width="140" height="32" rx="6" fill="rgba(108,140,255,0.15)" stroke="#4a6fd9" stroke-width="1.5"/>
+      <text x="340" y="103" text-anchor="middle" class="svg-text" font-size="12">Router: argmax(W·x)</text>
+      <!-- Fan out -->
+      <line x1="285" y1="115" x2="100" y2="155" stroke="#c8cdd8" stroke-width="1"/>
+      <line x1="315" y1="115" x2="240" y2="155" stroke="#c8cdd8" stroke-width="1"/>
+      <line x1="340" y1="115" x2="340" y2="155" stroke="#22a858" stroke-width="2" marker-end="url(#arr2)"/>
+      <line x1="365" y1="115" x2="440" y2="155" stroke="#c8cdd8" stroke-width="1"/>
+      <line x1="395" y1="115" x2="580" y2="155" stroke="#c8cdd8" stroke-width="1"/>
+      <!-- Experts -->
+      <rect x="55" y="158" width="90" height="28" rx="5" fill="#eceef4" stroke="#c8cdd8"/>
+      <text x="100" y="176" text-anchor="middle" class="svg-text-dim" font-size="10">Expert 1</text>
+      <rect x="195" y="158" width="90" height="28" rx="5" fill="#eceef4" stroke="#c8cdd8"/>
+      <text x="240" y="176" text-anchor="middle" class="svg-text-dim" font-size="10">Expert 2</text>
+      <rect x="295" y="158" width="90" height="28" rx="5" fill="rgba(74,222,128,0.15)" stroke="#22a858" stroke-width="1.5"/>
+      <text x="340" y="176" text-anchor="middle" class="svg-text-green" font-size="10" font-weight="700">Expert 3 ✓</text>
+      <rect x="395" y="158" width="90" height="28" rx="5" fill="#eceef4" stroke="#c8cdd8"/>
+      <text x="440" y="176" text-anchor="middle" class="svg-text-dim" font-size="10">Expert 4</text>
+      <rect x="535" y="158" width="90" height="28" rx="5" fill="#eceef4" stroke="#c8cdd8"/>
+      <text x="580" y="176" text-anchor="middle" class="svg-text-dim" font-size="10">Expert N</text>
+      <text x="500" y="176" class="svg-text-dim" font-size="14">···</text>
+      <!-- Capacity -->
+      <rect x="220" y="205" width="240" height="36" rx="6" fill="rgba(251,146,60,0.08)" stroke="#d47a24" stroke-width="1"/>
+      <text x="340" y="220" text-anchor="middle" class="svg-text-orange" font-size="10" font-weight="600">Capacity Factor</text>
+      <text x="340" y="234" text-anchor="middle" class="svg-text-dim" font-size="10">buffer_size = capacity × (tokens / experts)</text>
+    </svg>`
+  },
+  {
+    id: 3, shortName: "GShard '20", pillar: "arch", pillarLabel: "MoE Arch",
+    title: "GShard: Scaling Giant Models with Conditional Computation and Automatic Sharding",
+    authors: "Lepikhin, Lee, Xu, Chen, Firat, Huang, Krikun, Shazeer, Chen", year: 2020, venue: "ICLR", relevance: 4,
+    stats: [
+      { val: "600B", label: "Parameters" },
+      { val: "2048", label: "TPU v3s" },
+      { val: "k=2", label: "Top-2 Routing" },
+      { val: "100", label: "Languages" }
+    ],
+    formula: 'route to top-<span class="highlight">2</span> experts &nbsp;|&nbsp; 2nd expert dispatched <span class="dim">randomly</span>',
+    formulaNote: "Halfway between Shazeer's top-k and Switch's top-1",
+    summary: "Scales MoE to 600B parameters across 2048 TPUs for multilingual MT (100 languages → English). Uses top-2 expert routing with random second-expert dispatch for load balance. Introduces automatic compiler-level sharding (SPMD).",
+    insight: "Top-2 routing is our A4 ablation (k=1 vs k=2). With k=2, the energy penalty can push the second expert choice toward a lower-power GPU while the primary expert handles quality — a softer energy-quality trade-off than k=1.",
+    limitations: [
+      { icon: "🔒", text: "TPU-specific implementation — not portable to GPU clusters" },
+      { icon: "🎲", text: "Random second-expert dispatch is suboptimal — no learned selection" },
+      { icon: "🔍", text: "No analysis of expert specialization patterns or what tokens go where" },
+      { icon: "🔋", text: "No energy or power consumption reporting" }
+    ],
+    rqTags: ["RQ1", "RQ2"],
+    rqExplain: {
+      RQ1: "Top-2 routing gives two points on the energy curve per token. Our λ penalty can differentially affect the 2nd expert choice.",
+      RQ2: "With k=2, simpler tokens may tolerate having their 2nd expert switched to a low-power GPU more than complex tokens."
+    },
+    duplicity: "Gating equation identical to [1] Shazeer; top-2 is a specific instantiation. Automatic sharding is orthogonal to our routing modification but relevant to deployment.",
+    diagram: `<svg width="680" height="240" viewBox="0 0 680 240">
+      <defs><marker id="arr3" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6Z" fill="#4a6fd9"/></marker></defs>
+      <text x="340" y="20" text-anchor="middle" class="svg-text" font-size="13" font-weight="700">Top-2 Routing with Random 2nd Dispatch</text>
+      <rect x="280" y="35" width="120" height="28" rx="6" fill="rgba(59,130,246,0.1)" stroke="#3b82f6"/>
+      <text x="340" y="54" text-anchor="middle" class="svg-text" font-size="12">Token x</text>
+      <line x1="340" y1="63" x2="340" y2="80" stroke="#4a6fd9" marker-end="url(#arr3)"/>
+      <rect x="265" y="83" width="150" height="32" rx="6" fill="rgba(108,140,255,0.15)" stroke="#4a6fd9" stroke-width="1.5"/>
+      <text x="340" y="103" text-anchor="middle" class="svg-text" font-size="12">Gating → Top-2</text>
+      <!-- Primary -->
+      <line x1="300" y1="115" x2="180" y2="148" stroke="#22a858" stroke-width="2" marker-end="url(#arr3)"/>
+      <text x="215" y="137" class="svg-text-green" font-size="10" font-weight="600">1st (learned)</text>
+      <!-- Secondary -->
+      <line x1="380" y1="115" x2="500" y2="148" stroke="#d47a24" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arr3)"/>
+      <text x="460" y="137" class="svg-text-orange" font-size="10" font-weight="600">2nd (random)</text>
+      <rect x="120" y="152" width="120" height="34" rx="6" fill="rgba(74,222,128,0.12)" stroke="#22a858" stroke-width="1.5"/>
+      <text x="180" y="173" text-anchor="middle" class="svg-text-green" font-size="11" font-weight="600">Expert A ✓</text>
+      <rect x="440" y="152" width="120" height="34" rx="6" fill="rgba(251,146,60,0.12)" stroke="#d47a24" stroke-width="1.5"/>
+      <text x="500" y="173" text-anchor="middle" class="svg-text-orange" font-size="11">Expert D 🎲</text>
+      <rect x="180" y="205" width="320" height="26" rx="5" fill="rgba(34,211,238,0.06)" stroke="#1096a8" stroke-width="1"/>
+      <text x="340" y="222" text-anchor="middle" class="svg-text-cyan" font-size="10">Our λ penalty: push 2nd expert to low-power GPU → softer trade-off</text>
+    </svg>`
+  },
+  {
+    id: 14, shortName: "LIMoE '22", pillar: "arch", pillarLabel: "MoE Arch",
+    title: "Multimodal-MoE (LIMoE): Multimodal Contrastive Learning with MoE",
+    authors: "Mustafa, Riquelme, Puigcerver, Jenatton, Houlsby", year: 2022, venue: "NeurIPS", relevance: 3,
+    stats: [
+      { val: "84.1%", label: "0-shot ImageNet" },
+      { val: "5.6B", label: "Parameters" },
+      { val: "675M", label: "Active/Token" },
+      { val: "3", label: "Expert Types" }
+    ],
+    formula: 'L = L_contrastive + <span class="highlight">H_local</span>(modality) + <span class="highlight">H_global</span>(modality)',
+    formulaNote: "Per-modality entropy regularization for stability",
+    summary: "First large-scale multimodal MoE for contrastive image-text learning. Per-modality entropy regularization (local + global) stabilizes training and prevents collapse. Emergent specialization: image-only, text-only, and multimodal experts appear without explicit constraints.",
+    plainLanguage: "In plain terms: LIMoE feeds both text tokens and image patches through the same MoE. The problem is that images and text have very different statistics, so the router instinctively dumps 'all text' into one bunch of experts and 'all images' into another, defeating the point of shared processing. Their fix is to add a second loss term that says 'within each modality, please spread yourself out across experts' — a per-modality entropy regularizer. What matters for us isn't the multimodal story — it's the architectural template. LIMoE proves you can add a second, custom auxiliary objective to the router loss without breaking training. Our energy penalty is the exact same move: we're adding yet another term alongside task loss and load balance. LIMoE is our proof-of-concept that 'multi-objective routing loss' is a viable pattern.",
+    insight: "Demonstrates MoE routing is already multi-objective (accuracy + load balance); adding energy as a third objective is a natural extension. The entropy regularization technique is a candidate alternative to our additive penalty approach.",
+    limitations: [
+      { icon: "🔋", text: "No energy/efficiency analysis despite using sparse architecture" },
+      { icon: "🎯", text: "Entropy regularization is multimodal-specific — unclear generalization" },
+      { icon: "📐", text: "Limited to contrastive learning tasks" },
+      { icon: "⚡", text: "No routing-level energy awareness despite multi-objective setup" }
+    ],
+    rqTags: ["RQ1", "RQ2"],
+    rqExplain: {
+      RQ1: "Multi-objective precedent: if routing can optimize for accuracy + entropy balance, it can optimize for accuracy + energy.",
+      RQ2: "Emergent modality experts suggest that input-type-dependent routing is natural — energy-dependent routing is analogous."
+    },
+    duplicity: "Uses same top-k routing as [1-3]; entropy regularization is a novel addition not present in earlier MoE papers.",
+    diagram: `<svg width="680" height="250" viewBox="0 0 680 250">
+      <text x="340" y="20" text-anchor="middle" class="svg-text" font-size="13" font-weight="700">Emergent Expert Specialization in LIMoE</text>
+      <!-- Input types -->
+      <rect x="60" y="45" width="100" height="30" rx="6" fill="rgba(59,130,246,0.12)" stroke="#3b82f6"/>
+      <text x="110" y="64" text-anchor="middle" class="svg-text" font-size="11">🖼️ Image</text>
+      <rect x="290" y="45" width="100" height="30" rx="6" fill="rgba(139,92,246,0.12)" stroke="#6d3fc4"/>
+      <text x="340" y="64" text-anchor="middle" class="svg-text" font-size="11">📝 Text</text>
+      <rect x="520" y="45" width="100" height="30" rx="6" fill="rgba(34,211,238,0.12)" stroke="#1096a8"/>
+      <text x="570" y="64" text-anchor="middle" class="svg-text" font-size="11">🔗 Both</text>
+      <!-- Router -->
+      <rect x="225" y="100" width="230" height="32" rx="6" fill="rgba(108,140,255,0.1)" stroke="#4a6fd9"/>
+      <text x="340" y="120" text-anchor="middle" class="svg-text" font-size="12">MoE Router + Entropy Reg.</text>
+      <!-- Arrows down -->
+      <line x1="110" y1="75" x2="280" y2="100" stroke="#3b82f6" stroke-width="1"/>
+      <line x1="340" y1="75" x2="340" y2="100" stroke="#6d3fc4" stroke-width="1"/>
+      <line x1="570" y1="75" x2="400" y2="100" stroke="#1096a8" stroke-width="1"/>
+      <!-- Expert boxes -->
+      <rect x="40" y="160" width="120" height="40" rx="6" fill="rgba(59,130,246,0.1)" stroke="#3b82f6"/>
+      <text x="100" y="177" text-anchor="middle" class="svg-text" font-size="10" font-weight="600">Image Experts</text>
+      <text x="100" y="192" text-anchor="middle" class="svg-text-dim" font-size="9">visual features</text>
+      <rect x="200" y="160" width="120" height="40" rx="6" fill="rgba(34,211,238,0.1)" stroke="#1096a8"/>
+      <text x="260" y="177" text-anchor="middle" class="svg-text" font-size="10" font-weight="600">Multimodal</text>
+      <text x="260" y="192" text-anchor="middle" class="svg-text-dim" font-size="9">cross-modal</text>
+      <rect x="360" y="160" width="120" height="40" rx="6" fill="rgba(139,92,246,0.1)" stroke="#6d3fc4"/>
+      <text x="420" y="177" text-anchor="middle" class="svg-text" font-size="10" font-weight="600">Text Experts</text>
+      <text x="420" y="192" text-anchor="middle" class="svg-text-dim" font-size="9">linguistic features</text>
+      <rect x="520" y="160" width="120" height="40" rx="6" fill="rgba(251,146,60,0.08)" stroke="#d47a24" stroke-dasharray="4,3"/>
+      <text x="580" y="177" text-anchor="middle" class="svg-text-orange" font-size="10" font-weight="600">+ Energy?</text>
+      <text x="580" y="192" text-anchor="middle" class="svg-text-dim" font-size="9">our extension</text>
+      <text x="340" y="230" text-anchor="middle" class="svg-text-dim" font-size="11">Emergent specialization → no explicit constraints needed</text>
+    </svg>`
+  },
+  {
+    id: 15, shortName: "MoE-Mamba '24", pillar: "arch", pillarLabel: "MoE Arch",
+    title: "MoE-Mamba: Efficient Selective State Space Models with Mixture of Experts",
+    authors: "Piątkowski, Nowak, et al.", year: 2024, venue: "ICLR", relevance: 3,
+    stats: [
+      { val: "2.2×", label: "Fewer Steps" },
+      { val: "5×", label: "Throughput vs TF" },
+      { val: "O(n)", label: "Complexity" },
+      { val: "k=1", label: "Switch Routing" }
+    ],
+    formula: 'Mamba → <span class="highlight">MoE</span> → Mamba → <span class="highlight">MoE</span> → ... &nbsp;(alternating)',
+    formulaNote: "Mamba provides sequence context before expert selection",
+    summary: "Alternates Mamba (SSM) layers with MoE layers, combining linear-time inference with conditional computation. Uses Switch-style k=1 routing. Achieves same performance as Mamba in 2.2× fewer training steps while preserving 5× inference throughput over Transformers.",
+    plainLanguage: "In plain terms: Mamba is a non-Transformer architecture — a state-space model — that scales linearly with sequence length (Transformers are quadratic). The authors stuck MoE blocks into Mamba and showed it works just as well as in Transformers: 2.2× fewer training steps, 5× faster inference. The real lesson isn't about Mamba — it's meta. MoE routing isn't a Transformer feature; it's an architecture-agnostic primitive. Whatever clever thing you invent at the router level (like our energy penalty) will carry over to future architectures. So we're not betting our research on 'Transformers will dominate forever'. There's also a red flag here for the field at large: they claim '2.2× fewer steps' as an efficiency win, but steps ≠ Joules. A step on a 450W H100 and a step on a 250W L4 are very different amounts of energy. This is exactly why our project measures Joules directly instead of using step counts as a proxy.",
+    insight: "Shows MoE routing is architecture-agnostic (works beyond Transformers). Mamba layers provide global sequence context before expert selection, which could enable more informed energy-aware routing. Training step reduction is a proxy for energy savings but not equivalent — validates the need for direct Joule measurement (our approach).",
+    limitations: [
+      { icon: "📏", text: "Training step reduction ≠ energy reduction — not measured in Joules" },
+      { icon: "🔍", text: "Limited analysis of expert routing patterns or load distribution" },
+      { icon: "📊", text: "Load balance details underexplored" },
+      { icon: "🧪", text: "Applicability to other SSM variants beyond Mamba unclear" }
+    ],
+    rqTags: ["RQ1"],
+    rqExplain: {
+      RQ1: "Architecture-agnostic MoE validates that energy-aware routing could generalize beyond Transformers. Step reduction ≠ Joule reduction motivates our direct measurement."
+    },
+    duplicity: "Routing mechanism is essentially [2] Switch applied to SSM; novel contribution is the interleaving architecture, not the routing itself.",
+    diagram: `<svg width="680" height="200" viewBox="0 0 680 200">
+      <text x="340" y="20" text-anchor="middle" class="svg-text" font-size="13" font-weight="700">MoE-Mamba: Alternating Architecture</text>
+      <!-- Layer blocks -->
+      <rect x="40" y="55" width="100" height="50" rx="8" fill="rgba(139,92,246,0.12)" stroke="#6d3fc4" stroke-width="1.5"/>
+      <text x="90" y="78" text-anchor="middle" class="svg-text-purple" font-size="11" font-weight="600">Mamba</text>
+      <text x="90" y="94" text-anchor="middle" class="svg-text-dim" font-size="9">O(n), full seq</text>
+      <text x="155" y="83" class="svg-text-dim" font-size="18">→</text>
+      <rect x="170" y="55" width="100" height="50" rx="8" fill="rgba(74,222,128,0.12)" stroke="#22a858" stroke-width="1.5"/>
+      <text x="220" y="78" text-anchor="middle" class="svg-text-green" font-size="11" font-weight="600">MoE (k=1)</text>
+      <text x="220" y="94" text-anchor="middle" class="svg-text-dim" font-size="9">sparse, cond.</text>
+      <text x="285" y="83" class="svg-text-dim" font-size="18">→</text>
+      <rect x="300" y="55" width="100" height="50" rx="8" fill="rgba(139,92,246,0.12)" stroke="#6d3fc4" stroke-width="1.5"/>
+      <text x="350" y="78" text-anchor="middle" class="svg-text-purple" font-size="11" font-weight="600">Mamba</text>
+      <text x="350" y="94" text-anchor="middle" class="svg-text-dim" font-size="9">O(n), full seq</text>
+      <text x="415" y="83" class="svg-text-dim" font-size="18">→</text>
+      <rect x="430" y="55" width="100" height="50" rx="8" fill="rgba(74,222,128,0.12)" stroke="#22a858" stroke-width="1.5"/>
+      <text x="480" y="78" text-anchor="middle" class="svg-text-green" font-size="11" font-weight="600">MoE (k=1)</text>
+      <text x="480" y="94" text-anchor="middle" class="svg-text-dim" font-size="9">sparse, cond.</text>
+      <text x="545" y="83" class="svg-text-dim" font-size="18">→</text>
+      <rect x="560" y="65" width="80" height="30" rx="6" fill="#eceef4" stroke="#c8cdd8"/>
+      <text x="600" y="84" text-anchor="middle" class="svg-text-dim" font-size="12">...</text>
+      <!-- Annotation -->
+      <rect x="150" y="130" width="380" height="48" rx="8" fill="rgba(34,211,238,0.06)" stroke="#1096a8" stroke-width="1"/>
+      <text x="340" y="150" text-anchor="middle" class="svg-text-cyan" font-size="10" font-weight="600">Context-Informed Routing</text>
+      <text x="340" y="166" text-anchor="middle" class="svg-text-dim" font-size="10">Mamba processes full sequence → MoE routes with global context</text>
+    </svg>`
+  },
+  {
+    id: 4, shortName: "V-MoE '21", pillar: "analysis", pillarLabel: "Analysis",
+    title: "Scaling Vision with Sparse Mixture of Experts (V-MoE)",
+    authors: "Riquelme, Puigcerver, Mustafa, Neumann, Jenatton, Pinto, Keysers, Houlsby", year: 2021, venue: "NeurIPS", relevance: 4,
+    stats: [
+      { val: "90.35%", label: "ImageNet (FT)" },
+      { val: "15B", label: "Parameters" },
+      { val: "~50%", label: "Less Compute" },
+      { val: "Low", label: "Expert Diversity" }
+    ],
+    formula: 'BPR: priority(x) = max_i( softmax(x · W_g)_i ) → <span class="highlight">process high-priority first</span>',
+    formulaNote: "Batch Priority Routing re-ranks tokens before assignment",
+    summary: "Applies sparse MoE to Vision Transformers. 15B V-MoE reaches 90.35% ImageNet. Introduces Batch Priority Routing (BPR): tokens are scored and high-priority ones processed first. Key finding: experts tend to learn similar functions (low diversity), extracting common features rather than specializing.",
+    plainLanguage: "In plain terms: Transformers treat image patches as 'tokens'. V-MoE asks 'not all patches are equally hard — a blue-sky patch doesn't need a $100 expert, but the patch containing a face does'. Their trick is to rank patches by how confident the router is, and when expert slots fill up, the least confident (easiest) patches get dropped. That's adaptive per-image compute. The surprise finding was that when they peeked inside — looking at what each expert learned to do — the experts turned out to be weirdly similar to each other. That redundancy is great news for us: if expert 7 and expert 12 do nearly the same job, swapping a token from a high-power GPU to a low-power GPU costs you almost nothing in quality.",
+    insight: "BPR's priority mechanism is conceptually adjacent to our energy penalty — both re-rank tokens before routing. The low expert diversity finding suggests many experts are interchangeable, which our energy penalty can exploit: swapping to a lower-power expert incurs minimal quality loss when experts are near-identical.",
+    limitations: [
+      { icon: "🔄", text: "Experts learn similar functions — low diversity undermines MoE motivation" },
+      { icon: "👁️", text: "Vision-only evaluation — unclear if findings transfer to language" },
+      { icon: "⚙️", text: "BPR adds complexity to routing without clear quality improvement over simpler methods" },
+      { icon: "🔋", text: "No energy/compute cost analysis per expert or per token" }
+    ],
+    rqTags: ["RQ2"],
+    rqExplain: {
+      RQ2: "Low expert diversity = experts are interchangeable. Our energy penalty exploits this: routing to a cheaper expert incurs minimal quality loss."
+    },
+    duplicity: "Gating follows [1-2]; BPR is novel. Low-diversity finding aligns with [6] Puigcerver's Soft MoE rationale.",
+    diagram: `<svg width="680" height="240" viewBox="0 0 680 240">
+      <text x="340" y="20" text-anchor="middle" class="svg-text" font-size="13" font-weight="700">Low Expert Diversity → Opportunity for Energy Routing</text>
+      <!-- Experts as similar boxes -->
+      <rect x="60" y="55" width="80" height="60" rx="8" fill="rgba(59,130,246,0.1)" stroke="#3b82f6"/>
+      <text x="100" y="80" text-anchor="middle" class="svg-text" font-size="10">Expert 1</text>
+      <text x="100" y="105" text-anchor="middle" class="svg-text-dim" font-size="22">≈</text>
+      <rect x="170" y="55" width="80" height="60" rx="8" fill="rgba(59,130,246,0.1)" stroke="#3b82f6"/>
+      <text x="210" y="80" text-anchor="middle" class="svg-text" font-size="10">Expert 2</text>
+      <text x="210" y="105" text-anchor="middle" class="svg-text-dim" font-size="22">≈</text>
+      <rect x="280" y="55" width="80" height="60" rx="8" fill="rgba(59,130,246,0.1)" stroke="#3b82f6"/>
+      <text x="320" y="80" text-anchor="middle" class="svg-text" font-size="10">Expert 3</text>
+      <text x="320" y="105" text-anchor="middle" class="svg-text-dim" font-size="22">≈</text>
+      <rect x="390" y="55" width="80" height="60" rx="8" fill="rgba(59,130,246,0.1)" stroke="#3b82f6"/>
+      <text x="430" y="80" text-anchor="middle" class="svg-text" font-size="10">Expert 4</text>
+      <text x="490" y="85" class="svg-text-dim" font-size="12">... similar functions!</text>
+      <!-- Arrow to insight -->
+      <line x1="340" y1="125" x2="340" y2="145" stroke="#22a858" stroke-width="2"/>
+      <polygon points="333,145 347,145 340,155" fill="#22a858"/>
+      <rect x="120" y="160" width="440" height="60" rx="10" fill="rgba(74,222,128,0.08)" stroke="#22a858" stroke-width="1.5"/>
+      <text x="340" y="183" text-anchor="middle" class="svg-text-green" font-size="12" font-weight="700">If experts ≈ identical → swap to low-power GPU is nearly free</text>
+      <text x="340" y="205" text-anchor="middle" class="svg-text-dim" font-size="11">Quality loss from energy-aware rerouting is minimal when diversity is low</text>
+    </svg>`
+  },
+  {
+    id: 5, shortName: "Clark '22", pillar: "analysis", pillarLabel: "Analysis",
+    title: "What Do Experts Do in Sparsely-Gated Mixture-of-Experts?",
+    authors: "Clark, Casas, Guy, et al.", year: 2022, venue: "EMNLP", relevance: 4,
+    stats: [
+      { val: "Soft", label: "Specialization" },
+      { val: "↓", label: "Entropy in Deep" },
+      { val: "2 types", label: "General + Specialist" },
+      { val: "C4", label: "Analysis Dataset" }
+    ],
+    formula: 'Routing Entropy: H = −Σ p_i · log(p_i) &nbsp;→&nbsp; <span class="highlight">decreases in deeper layers</span>',
+    formulaNote: "More confident routing = more exploitable by energy penalty",
+    summary: "Analyzes expert specialization in trained MoE language models. Finds soft specialization: experts have token-type preferences (punctuation, entities, function words) but no strict partitioning. Routing entropy decreases in deeper layers. Some experts are generalists; others narrow specialists.",
+    insight: "Directly informs RQ2. If 'simpler' tokens (high routing confidence, low entropy) go to certain experts, our energy penalty should preferentially route those tokens to low-power GPUs. Generalist experts may tolerate the energy penalty better since they're already flexible.",
+    limitations: [
+      { icon: "👀", text: "Observational only — no causal intervention to test if specialization matters" },
+      { icon: "📖", text: "Limited to language domain — may not generalize to vision/multimodal" },
+      { icon: "🔗", text: "Does not connect specialization patterns to compute or energy cost" },
+      { icon: "🧪", text: "Analysis on specific MoE configurations — may not generalize to other architectures" }
+    ],
+    rqTags: ["RQ2"],
+    rqExplain: {
+      RQ2: "Core evidence for our hypothesis: high-confidence (low-entropy) tokens are 'simpler' and can be rerouted to low-power GPUs. Generalist experts absorb the energy penalty better."
+    },
+    duplicity: "Builds on [1-2]'s architectures; provides the analysis that [1-2] lack. Complements [4]'s finding about expert similarity from a linguistic (not vision) angle.",
+    diagram: `<svg width="680" height="260" viewBox="0 0 680 260">
+      <text x="340" y="20" text-anchor="middle" class="svg-text" font-size="13" font-weight="700">Expert Specialization Spectrum + Energy Routing Opportunity</text>
+      <!-- Layer depth axis -->
+      <text x="30" y="70" class="svg-text-dim" font-size="10" text-anchor="middle">Layer 1</text>
+      <text x="30" y="130" class="svg-text-dim" font-size="10" text-anchor="middle">Layer 6</text>
+      <text x="30" y="190" class="svg-text-dim" font-size="10" text-anchor="middle">Layer 12</text>
+      <!-- Entropy bars (decreasing) -->
+      <rect x="60" y="55" width="280" height="24" rx="4" fill="rgba(248,113,113,0.2)" stroke="#d84848" stroke-width="1"/>
+      <text x="200" y="71" text-anchor="middle" class="svg-text-red" font-size="10">High entropy → uncertain routing</text>
+      <rect x="60" y="115" width="180" height="24" rx="4" fill="rgba(251,146,60,0.2)" stroke="#d47a24" stroke-width="1"/>
+      <text x="150" y="131" text-anchor="middle" class="svg-text-orange" font-size="10">Medium entropy</text>
+      <rect x="60" y="175" width="90" height="24" rx="4" fill="rgba(74,222,128,0.2)" stroke="#22a858" stroke-width="1"/>
+      <text x="105" y="191" text-anchor="middle" class="svg-text-green" font-size="10">Low entropy</text>
+      <text x="170" y="191" class="svg-text-green" font-size="10" font-weight="600">← confident!</text>
+      <!-- Annotation -->
+      <line x1="370" y1="55" x2="370" y2="200" stroke="#c8cdd8" stroke-dasharray="4,3"/>
+      <!-- Specialist vs Generalist -->
+      <rect x="400" y="50" width="120" height="70" rx="8" fill="rgba(139,92,246,0.08)" stroke="#6d3fc4"/>
+      <text x="460" y="72" text-anchor="middle" class="svg-text-purple" font-size="11" font-weight="600">Specialists</text>
+      <text x="460" y="88" text-anchor="middle" class="svg-text-dim" font-size="9">punctuation, entities</text>
+      <text x="460" y="102" text-anchor="middle" class="svg-text-dim" font-size="9">narrow token types</text>
+      <rect x="540" y="50" width="120" height="70" rx="8" fill="rgba(34,211,238,0.08)" stroke="#1096a8"/>
+      <text x="600" y="72" text-anchor="middle" class="svg-text-cyan" font-size="11" font-weight="600">Generalists</text>
+      <text x="600" y="88" text-anchor="middle" class="svg-text-dim" font-size="9">diverse token mix</text>
+      <text x="600" y="102" text-anchor="middle" class="svg-text-dim" font-size="9">flexible routing</text>
+      <!-- Energy insight -->
+      <rect x="400" y="145" width="260" height="55" rx="8" fill="rgba(74,222,128,0.08)" stroke="#22a858"/>
+      <text x="530" y="165" text-anchor="middle" class="svg-text-green" font-size="10" font-weight="600">Energy Routing Hypothesis (RQ2)</text>
+      <text x="530" y="180" text-anchor="middle" class="svg-text-dim" font-size="9">Low-entropy tokens → safely reroute to low-power GPU</text>
+      <text x="530" y="193" text-anchor="middle" class="svg-text-dim" font-size="9">Generalist experts → absorb energy penalty better</text>
+      <!-- Entropy label -->
+      <text x="340" y="240" text-anchor="middle" class="svg-text-dim" font-size="11">Entropy ↓ in deep layers = more opportunity for energy-aware routing</text>
+    </svg>`
+  },
+  {
+    id: 6, shortName: "Soft MoE '23", pillar: "analysis", pillarLabel: "Analysis",
+    title: "From Sparse to Soft Mixtures of Experts",
+    authors: "Puigcerver, Riquelme, Mustafa, Houlsby", year: 2023, venue: "NeurIPS", relevance: 3,
+    stats: [
+      { val: "27.3B", label: "Parameters" },
+      { val: "+2%", label: "Inference Overhead" },
+      { val: "0", label: "Dead Experts" },
+      { val: "128", label: "Experts" }
+    ],
+    formula: 'Y = Σ_i <span class="highlight">w_i</span> · Expert_i( Σ_j <span class="highlight">s_j</span> · x_j ) &nbsp;&nbsp;<span class="dim">fully differentiable</span>',
+    formulaNote: "Soft weighted combinations replace hard top-k routing",
+    summary: "Proposes Soft MoE: instead of hard top-k routing, each expert receives a weighted combination of all tokens (fully differentiable). Eliminates token dropping, expert collapse, and routing instability entirely. Scales smoothly with expert count — no dead experts.",
+    plainLanguage: "In plain terms: regular MoE has two ugly bugs. Bug #1: when too many tokens pick the same expert, the overflow tokens get silently dropped — they just don't get processed. Bug #2: some experts never get picked at all and become dead weight (called 'expert collapse'). Soft MoE says 'forget picking — let every expert see a blended version of every token, with weights'. Now nothing is dropped and nothing collapses, and you can train it with smooth gradients because there's no discrete choice. The cost is that at inference time you're no longer sparse — you have to actually run all the experts. For us, Soft MoE is a 'this is what a perfectly behaved routing system looks like' reference point. Our method stays in the hard-routing camp (we still pick top-k) but needs to be robust against the instabilities that made Soft MoE appealing in the first place.",
+    insight: "Soft MoE is an alternative paradigm where our discrete energy penalty doesn't directly apply (no hard assignment). However, it provides an important upper-bound comparison: if soft routing achieves similar quality without energy awareness, our method's value is in the hard-routing regime. Also validates that routing instability (which our λ could trigger) is a real sparse MoE concern.",
+    limitations: [
+      { icon: "🔀", text: "No discrete expert selection — our energy penalty mechanism doesn't apply" },
+      { icon: "💾", text: "Higher memory: weighted combinations of all tokens sent to all experts" },
+      { icon: "👁️", text: "Primarily validated on vision — less explored for language" },
+      { icon: "🏗️", text: "Fundamentally different paradigm — not directly comparable to sparse MoE improvements" }
+    ],
+    rqTags: ["RQ1"],
+    rqExplain: {
+      RQ1: "Upper-bound comparison. If soft MoE matches quality without energy cost, our method's value is specifically in the hard-routing regime where discrete expert selection can be energy-steered."
+    },
+    duplicity: "Directly challenges the hard-routing paradigm of [1-3]. Expert collapse problem discussed in [1-2] is solved here but via a fundamentally different mechanism.",
+    diagram: `<svg width="680" height="230" viewBox="0 0 680 230">
+      <text x="340" y="20" text-anchor="middle" class="svg-text" font-size="13" font-weight="700">Hard Routing (Ours) vs Soft Routing (Puigcerver)</text>
+      <!-- Hard routing side -->
+      <text x="170" y="50" text-anchor="middle" class="svg-text-accent" font-size="11" font-weight="600">Hard Top-k (Our Regime)</text>
+      <rect x="90" y="65" width="40" height="20" rx="4" fill="rgba(74,222,128,0.15)" stroke="#22a858" stroke-width="1.5"/>
+      <rect x="140" y="65" width="40" height="20" rx="4" fill="#eceef4" stroke="#c8cdd8"/>
+      <rect x="190" y="65" width="40" height="20" rx="4" fill="#eceef4" stroke="#c8cdd8"/>
+      <rect x="240" y="65" width="40" height="20" rx="4" fill="#eceef4" stroke="#c8cdd8"/>
+      <text x="110" y="79" text-anchor="middle" class="svg-text-green" font-size="9" font-weight="700">100%</text>
+      <text x="160" y="79" text-anchor="middle" class="svg-text-dim" font-size="9">0%</text>
+      <text x="210" y="79" text-anchor="middle" class="svg-text-dim" font-size="9">0%</text>
+      <text x="260" y="79" text-anchor="middle" class="svg-text-dim" font-size="9">0%</text>
+      <text x="170" y="105" text-anchor="middle" class="svg-text-dim" font-size="10">Token → 1 expert (discrete)</text>
+      <text x="170" y="120" text-anchor="middle" class="svg-text-green" font-size="10" font-weight="600">✓ Energy penalty applies here</text>
+      <!-- Soft routing side -->
+      <text x="510" y="50" text-anchor="middle" class="svg-text-purple" font-size="11" font-weight="600">Soft MoE (Puigcerver)</text>
+      <rect x="430" y="65" width="40" height="20" rx="4" fill="rgba(139,92,246,0.25)" stroke="#6d3fc4"/>
+      <rect x="480" y="65" width="40" height="20" rx="4" fill="rgba(139,92,246,0.15)" stroke="#6d3fc4"/>
+      <rect x="530" y="65" width="40" height="20" rx="4" fill="rgba(139,92,246,0.08)" stroke="#6d3fc4"/>
+      <rect x="580" y="65" width="40" height="20" rx="4" fill="rgba(139,92,246,0.04)" stroke="#6d3fc4"/>
+      <text x="450" y="79" text-anchor="middle" class="svg-text-purple" font-size="9">40%</text>
+      <text x="500" y="79" text-anchor="middle" class="svg-text-purple" font-size="9">30%</text>
+      <text x="550" y="79" text-anchor="middle" class="svg-text-purple" font-size="9">20%</text>
+      <text x="600" y="79" text-anchor="middle" class="svg-text-purple" font-size="9">10%</text>
+      <text x="510" y="105" text-anchor="middle" class="svg-text-dim" font-size="10">Token → all experts (weighted)</text>
+      <text x="510" y="120" text-anchor="middle" class="svg-text-red" font-size="10">✗ No discrete choice to penalize</text>
+      <!-- Comparison -->
+      <rect x="120" y="145" width="440" height="65" rx="8" fill="rgba(250,204,21,0.06)" stroke="#a88b12" stroke-width="1"/>
+      <text x="340" y="167" text-anchor="middle" class="svg-text-yellow" font-size="11" font-weight="700">Why This Matters for Our Project</text>
+      <text x="340" y="185" text-anchor="middle" class="svg-text-dim" font-size="10">Soft MoE solves collapse/dropping but our energy penalty needs discrete routing</text>
+      <text x="340" y="200" text-anchor="middle" class="svg-text-dim" font-size="10">Soft MoE = upper-bound reference | Hard MoE = our contribution space</text>
+    </svg>`
+  },
+  {
+    id: 7, shortName: "Green AI '20", pillar: "green", pillarLabel: "Green AI",
+    title: "Green AI",
+    authors: "Schwartz, Dodge, Smith, Etzioni", year: 2020, venue: "Comm. ACM", relevance: 4,
+    stats: [
+      { val: "284K", label: "kg CO₂ (NAS)" },
+      { val: "3.4mo", label: "Compute Doubling" },
+      { val: "FLOPs", label: "Proposed Metric" },
+      { val: "Red↔Green", label: "AI Spectrum" }
+    ],
+    formula: 'Efficiency = <span class="highlight">Result</span> / Cost &nbsp;&nbsp;(not just Result alone)',
+    formulaNote: "λ parameter = the Red ↔ Green dial in our project",
+    summary: "Position paper distinguishing 'Red AI' (accuracy at any compute cost) from 'Green AI' (accuracy per unit of compute). Proposes FLOPs as a primary efficiency metric. Documents that NLP model training can emit up to 284,000 kg CO₂.",
+    insight: "Establishes the philosophical foundation for our work. Our project is a concrete instantiation of Green AI: the λ parameter literally controls the Red↔Green trade-off. The Pareto frontier we plot (perplexity vs. Joules) is the empirical realization of Schwartz's efficiency reporting call.",
+    limitations: [
+      { icon: "📐", text: "Proposes FLOPs as metric, but FLOPs ≠ energy (hardware-dependent). We use Joules." },
+      { icon: "🔧", text: "No concrete implementation or tool — purely conceptual advocacy" },
+      { icon: "📉", text: "Does not quantify the actual energy-quality trade-off curves" },
+      { icon: "🏭", text: "Focuses on training cost, less on inference where MoE routing matters most" }
+    ],
+    rqTags: ["RQ1", "RQ3"],
+    rqExplain: {
+      RQ1: "Motivates measuring energy alongside perplexity. Our Pareto frontier is the empirical realization of Schwartz's call.",
+      RQ3: "GLUE score under energy budget = a practical 'Green AI' quality-cost curve as Schwartz envisioned."
+    },
+    duplicity: null,
+    diagram: `<svg width="680" height="200" viewBox="0 0 680 200">
+      <text x="340" y="20" text-anchor="middle" class="svg-text" font-size="13" font-weight="700">The Red AI ↔ Green AI Spectrum</text>
+      <!-- Gradient bar -->
+      <defs><linearGradient id="rgGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#d84848"/><stop offset="50%" stop-color="#d47a24"/><stop offset="100%" stop-color="#22a858"/></linearGradient></defs>
+      <rect x="100" y="50" width="480" height="30" rx="8" fill="url(#rgGrad)" opacity="0.3"/>
+      <rect x="100" y="50" width="480" height="30" rx="8" fill="none" stroke="url(#rgGrad)" stroke-width="1.5"/>
+      <text x="130" y="70" class="svg-text-red" font-size="11" font-weight="700">RED AI</text>
+      <text x="550" y="70" class="svg-text-green" font-size="11" font-weight="700">GREEN AI</text>
+      <text x="340" y="70" text-anchor="middle" class="svg-text" font-size="11">↔</text>
+      <!-- Lambda positions -->
+      <text x="140" y="100" text-anchor="middle" class="svg-text-dim" font-size="10">λ = 0</text>
+      <text x="140" y="114" text-anchor="middle" class="svg-text-dim" font-size="9">(max quality)</text>
+      <line x1="140" y1="80" x2="140" y2="88" stroke="#d84848" stroke-width="2"/>
+      <text x="340" y="100" text-anchor="middle" class="svg-text-orange" font-size="10">λ = 1e-3</text>
+      <text x="340" y="114" text-anchor="middle" class="svg-text-dim" font-size="9">(balanced)</text>
+      <line x1="340" y1="80" x2="340" y2="88" stroke="#d47a24" stroke-width="2"/>
+      <text x="540" y="100" text-anchor="middle" class="svg-text-green" font-size="10">λ = 1e-1</text>
+      <text x="540" y="114" text-anchor="middle" class="svg-text-dim" font-size="9">(max savings)</text>
+      <line x1="540" y1="80" x2="540" y2="88" stroke="#22a858" stroke-width="2"/>
+      <!-- Bottom note -->
+      <rect x="140" y="135" width="400" height="40" rx="8" fill="rgba(108,140,255,0.06)" stroke="#4a6fd9"/>
+      <text x="340" y="155" text-anchor="middle" class="svg-text-accent" font-size="10" font-weight="600">Our Contribution: λ is the tunable Red↔Green dial</text>
+      <text x="340" y="168" text-anchor="middle" class="svg-text-dim" font-size="9">Pareto frontier maps the entire spectrum empirically</text>
+    </svg>`
+  },
+  {
+    id: 8, shortName: "Patterson '21", pillar: "green", pillarLabel: "Green AI",
+    title: "Carbon Emissions and Large Neural Network Training",
+    authors: "Patterson, Gonzalez, Le, Liang, Munguia, Rothchild, So, Texier, Dean", year: 2021, venue: "arXiv", relevance: 4,
+    stats: [
+      { val: "86 MWh", label: "T5-XXL Train" },
+      { val: "<1/10", label: "Sparse vs Dense" },
+      { val: "5-10×", label: "Carbon by Location" },
+      { val: "7×", label: "Switch Speedup" }
+    ],
+    formula: 'Energy_sparse < <span class="highlight">1/10</span> × Energy_dense &nbsp;(same quality)',
+    formulaNote: "Sparse MoE already saves energy — we make it save even more",
+    summary: "Empirically quantifies energy/carbon for training large models (T5, GPT-3, Switch Transformer). Sparse models consume <1/10th the energy of dense equivalents. Training T5-XXL costs ~86 MWh. Datacenter location creates 5-10× carbon variation.",
+    insight: "Provides the empirical evidence that sparse MoE already saves energy vs. dense models. Our contribution goes further: not just 'sparse is cheaper' but 'energy-aware sparse routing is cheaper than energy-agnostic sparse routing.' Patterson's numbers are our motivating data.",
+    limitations: [
+      { icon: "📊", text: "Post-hoc measurement only — no integration into training loop" },
+      { icon: "🖥️", text: "Numbers depend on specific hardware/datacenter — hard to reproduce exactly" },
+      { icon: "🔌", text: "Does not distinguish per-expert or per-token energy costs" },
+      { icon: "📈", text: "No Pareto analysis — just point estimates for each model" }
+    ],
+    rqTags: ["RQ1", "RQ3"],
+    rqExplain: {
+      RQ1: "Motivating evidence: sparse MoE < 1/10th dense energy. We push further: energy-aware routing < energy-agnostic routing.",
+      RQ3: "Baseline energy numbers for GLUE-class models inform our expected energy budget ranges."
+    },
+    duplicity: "Energy measurements complement [7]'s philosophical argument. Switch Transformer analysis overlaps with [2] Fedus but from an energy (not perplexity) perspective.",
+    diagram: `<svg width="680" height="220" viewBox="0 0 680 220">
+      <text x="340" y="20" text-anchor="middle" class="svg-text" font-size="13" font-weight="700">Energy Hierarchy: Dense → Sparse → Energy-Aware Sparse</text>
+      <!-- Three bars -->
+      <rect x="80" y="55" width="480" height="36" rx="6" fill="rgba(248,113,113,0.15)" stroke="#d84848"/>
+      <text x="90" y="77" class="svg-text-red" font-size="11" font-weight="600">Dense Transformer (T5-XXL): ~86 MWh</text>
+      <rect x="80" y="105" width="48" height="36" rx="6" fill="rgba(251,146,60,0.15)" stroke="#d47a24"/>
+      <text x="140" y="127" class="svg-text-orange" font-size="11" font-weight="600">Switch Transformer: <1/10th ← known</text>
+      <rect x="80" y="155" width="30" height="36" rx="6" fill="rgba(74,222,128,0.2)" stroke="#22a858" stroke-width="1.5"/>
+      <text x="122" y="177" class="svg-text-green" font-size="11" font-weight="700">Ours (λ>0): even less ← our contribution</text>
+      <!-- Scale -->
+      <text x="580" y="77" text-anchor="end" class="svg-text-dim" font-size="9">100% energy</text>
+      <text x="148" y="127" text-anchor="start" class="svg-text-dim" font-size="9"></text>
+      <text x="580" y="207" text-anchor="end" class="svg-text-dim" font-size="10">→ Energy (not to scale)</text>
+    </svg>`
+  },
+  {
+    id: 9, shortName: "Green Algo '21", pillar: "green", pillarLabel: "Green AI", toolOnly: true,
+    title: "Green Algorithms: Quantifying the Carbon Footprint of Computation",
+    authors: "Lannelongue, Grealey, Inouye", year: 2021, venue: "Adv. Science", relevance: 3,
+    stats: [
+      { val: "2.5t", label: "CO₂/day (weather)" },
+      { val: "100Mt", label: "DC CO₂/year" },
+      { val: "Web", label: "Calculator" },
+      { val: "5", label: "Input Factors" }
+    ],
+    formula: 'Carbon = Runtime × Power × <span class="highlight">PUE</span> × Carbon_Intensity',
+    formulaNote: "Our measurement: Energy = Σ(Power_i × Δt) follows this decomposition",
+    summary: "Develops a standardized methodology and open-source calculator (green-algorithms.org) for estimating computation's carbon footprint. Factors in runtime, hardware type, cores, memory, datacenter PUE, and grid carbon intensity.",
+    insight: "Their decomposition Carbon = Runtime × Power × PUE × CI maps directly onto our measurement approach. We measure Power via nvidia-smi, Runtime via wall-clock, yielding Energy = Σ(Power_i × Δt) in Joules.",
+    limitations: [
+      { icon: "📏", text: "Estimation-based, not direct measurement — assumes steady-state power draw" },
+      { icon: "⚡", text: "Does not capture dynamic per-GPU power variation during training" },
+      { icon: "🔄", text: "Static model — no feedback loop into training decisions" },
+      { icon: "🎯", text: "Too coarse for per-expert or per-token energy attribution" }
+    ],
+    rqTags: ["RQ1"],
+    rqExplain: {
+      RQ1: "Validates our Energy = Power × Time decomposition. We refine it to per-GPU, per-second granularity."
+    },
+    duplicity: "Methodology overlaps with [10] Henderson but with a simpler, calculator-based approach vs. [10]'s tracking library.",
+    diagram: `<svg width="680" height="180" viewBox="0 0 680 180">
+      <text x="340" y="20" text-anchor="middle" class="svg-text" font-size="13" font-weight="700">Carbon Footprint Decomposition</text>
+      <rect x="50" y="50" width="100" height="40" rx="6" fill="rgba(108,140,255,0.1)" stroke="#4a6fd9"/>
+      <text x="100" y="74" text-anchor="middle" class="svg-text" font-size="11">Runtime</text>
+      <text x="160" y="74" class="svg-text-dim" font-size="18">×</text>
+      <rect x="175" y="50" width="100" height="40" rx="6" fill="rgba(74,222,128,0.1)" stroke="#22a858"/>
+      <text x="225" y="74" text-anchor="middle" class="svg-text-green" font-size="11" font-weight="600">Power</text>
+      <text x="285" y="74" class="svg-text-dim" font-size="18">×</text>
+      <rect x="300" y="50" width="80" height="40" rx="6" fill="rgba(251,146,60,0.1)" stroke="#d47a24"/>
+      <text x="340" y="74" text-anchor="middle" class="svg-text" font-size="11">PUE</text>
+      <text x="390" y="74" class="svg-text-dim" font-size="18">×</text>
+      <rect x="405" y="50" width="120" height="40" rx="6" fill="rgba(139,92,246,0.1)" stroke="#6d3fc4"/>
+      <text x="465" y="74" text-anchor="middle" class="svg-text" font-size="11">Carbon Int.</text>
+      <text x="540" y="74" class="svg-text-dim" font-size="14">= CO₂</text>
+      <!-- Our refinement -->
+      <rect x="130" y="110" width="280" height="50" rx="8" fill="rgba(34,211,238,0.06)" stroke="#1096a8"/>
+      <text x="270" y="130" text-anchor="middle" class="svg-text-cyan" font-size="10" font-weight="600">Our Refinement</text>
+      <text x="270" y="148" text-anchor="middle" class="svg-text-dim" font-size="10">Energy = Σ_gpu Σ_t ( Power_gpu(t) × Δt ) → per-expert Joules</text>
+    </svg>`
+  },
+  {
+    id: 10, shortName: "Henderson '20", pillar: "green", pillarLabel: "Green AI", toolOnly: true,
+    title: "Towards Systematic Reporting of Energy and Carbon Footprints of ML",
+    authors: "Henderson, Hu, Romoff, Joelle Pineau, et al.", year: 2020, venue: "JMLR", relevance: 4,
+    stats: [
+      { val: "0%", label: "NeurIPS Carbon" },
+      { val: "1%", label: "NeurIPS Energy" },
+      { val: "13", label: "Metrics Proposed" },
+      { val: "Lib", label: "impact-tracker" }
+    ],
+    formula: '13 metrics: power, GPU_util, carbon_eq, <span class="highlight">PUE_adjusted</span>, ...',
+    formulaNote: "Our logging should report: total Joules, per-expert Joules, J/token, carbon eq.",
+    summary: "Proposes experiment-impact-tracker: a Python library with 13 standardized metrics for energy/carbon reporting. Surveys NeurIPS 2019: 0% reported carbon, 1% reported energy. Provides leaderboard-style comparison.",
+    insight: "Their 13-metric framework informs our logging design. We should report: total Joules, per-expert Joules, Joules-per-token, carbon equivalent. The 0%/1% reporting gap motivates our work as a contribution to the Green AI reporting norm.",
+    limitations: [
+      { icon: "📦", text: "Library adds measurement overhead — needs to be validated" },
+      { icon: "📋", text: "13 metrics may be excessive for most experiments" },
+      { icon: "📈", text: "Limited adoption despite availability — culture change is slow" },
+      { icon: "🔌", text: "No real-time feedback into training — purely reporting tool" }
+    ],
+    rqTags: ["RQ1", "RQ3"],
+    rqExplain: {
+      RQ1: "13-metric framework guides our logging. 0% NeurIPS reporting = our project fills a real gap.",
+      RQ3: "Standardized metrics enable fair comparison of GLUE scores across energy budgets."
+    },
+    duplicity: "Overlaps with [9] Lannelongue in goals; differs in approach (Python tracker vs. web calculator). Both complement [7] Schwartz.",
+    diagram: `<svg width="680" height="200" viewBox="0 0 680 200">
+      <text x="340" y="20" text-anchor="middle" class="svg-text" font-size="13" font-weight="700">NeurIPS 2019 Reporting Gap → Our Opportunity</text>
+      <!-- Bar chart -->
+      <rect x="120" y="50" width="200" height="30" rx="4" fill="rgba(108,140,255,0.15)" stroke="#4a6fd9"/>
+      <text x="130" y="70" class="svg-text" font-size="10">Papers reporting accuracy</text>
+      <text x="330" y="70" class="svg-text-accent" font-size="11" font-weight="700">~100%</text>
+      <rect x="120" y="90" width="2" height="30" rx="4" fill="rgba(251,146,60,0.3)" stroke="#d47a24"/>
+      <text x="130" y="110" class="svg-text" font-size="10">Papers reporting energy</text>
+      <text x="330" y="110" class="svg-text-orange" font-size="11" font-weight="700">1%</text>
+      <rect x="120" y="130" width="0.5" height="30" rx="4" fill="rgba(248,113,113,0.3)" stroke="#d84848"/>
+      <text x="130" y="150" class="svg-text" font-size="10">Papers reporting carbon</text>
+      <text x="330" y="150" class="svg-text-red" font-size="11" font-weight="700">0%</text>
+      <rect x="380" y="70" width="250" height="60" rx="8" fill="rgba(74,222,128,0.08)" stroke="#22a858"/>
+      <text x="505" y="92" text-anchor="middle" class="svg-text-green" font-size="10" font-weight="600">Our Project Reports All Three</text>
+      <text x="505" y="110" text-anchor="middle" class="svg-text-dim" font-size="9">PPL + Joules + CO₂ equivalent</text>
+      <text x="505" y="122" text-anchor="middle" class="svg-text-dim" font-size="9">per-expert, per-token granularity</text>
+    </svg>`
+  },
+  {
+    id: 11, shortName: "PyJoules '22", pillar: "green", pillarLabel: "Green AI", toolOnly: true,
+    title: "PyJoules: A Python Library for Energy Consumption Monitoring",
+    authors: "Spirals Research Group, INRIA/Lille", year: 2022, venue: "JOSS", relevance: 3,
+    stats: [
+      { val: "<5%", label: "Overhead" },
+      { val: "RAPL", label: "CPU/RAM Source" },
+      { val: "NVML", label: "GPU Source" },
+      { val: "J", label: "Unit (Joules)" }
+    ],
+    formula: '@measure_energy → <span class="highlight">Joules</span>(CPU) + <span class="highlight">Joules</span>(GPU) + <span class="highlight">Joules</span>(RAM)',
+    formulaNote: "Decorator-based measurement; complementary to our pynvml monitor",
+    summary: "Python library for energy measurement using Intel RAPL (CPU/RAM) and NVIDIA APIs (GPU). Provides decorator-based and context-manager-based measurement with <5% overhead. Reports energy in Joules.",
+    insight: "PyJoules is a complementary tool to our pynvml-based energy_monitor.py. We use pynvml for real-time per-GPU power polling (feeding the cost vector into the gating network); PyJoules could validate our measurements at the experiment level. The <5% overhead claim is our target too.",
+    limitations: [
+      { icon: "🔧", text: "Intel RAPL is Intel-only — no AMD CPU support" },
+      { icon: "📡", text: "NVIDIA API has same sampling limitations as nvidia-smi (~25% on A100)" },
+      { icon: "📊", text: "No real-time streaming — measures total energy per decorated block" },
+      { icon: "🔄", text: "Cannot feed measurements back into model during training" }
+    ],
+    rqTags: ["RQ1"],
+    rqExplain: {
+      RQ1: "Validation tool: cross-check our pynvml readings against PyJoules totals. <5% overhead = our target."
+    },
+    duplicity: "Measurement tool like [12] nvidia-smi; differs in abstraction (Python library vs. CLI). Both feed into [10] Henderson's framework.",
+    diagram: `<svg width="680" height="180" viewBox="0 0 680 180">
+      <text x="340" y="20" text-anchor="middle" class="svg-text" font-size="13" font-weight="700">Our Measurement Stack</text>
+      <!-- Stack layers -->
+      <rect x="140" y="45" width="400" height="34" rx="6" fill="rgba(74,222,128,0.1)" stroke="#22a858" stroke-width="1.5"/>
+      <text x="340" y="66" text-anchor="middle" class="svg-text-green" font-size="11" font-weight="600">energy_monitor.py (pynvml) — real-time per-GPU polling → e_gpu vector</text>
+      <rect x="140" y="88" width="400" height="34" rx="6" fill="rgba(139,92,246,0.1)" stroke="#6d3fc4"/>
+      <text x="340" y="109" text-anchor="middle" class="svg-text-purple" font-size="11">PyJoules — experiment-level validation (CPU + GPU + RAM)</text>
+      <rect x="140" y="131" width="400" height="34" rx="6" fill="rgba(108,140,255,0.1)" stroke="#4a6fd9"/>
+      <text x="340" y="152" text-anchor="middle" class="svg-text-accent" font-size="11">nvidia-smi / NVML — hardware sensor layer</text>
+      <text x="110" y="66" text-anchor="end" class="svg-text-green" font-size="9" font-weight="700">OURS</text>
+      <text x="110" y="109" text-anchor="end" class="svg-text-dim" font-size="9">VALIDATE</text>
+      <text x="110" y="152" text-anchor="end" class="svg-text-dim" font-size="9">HARDWARE</text>
+    </svg>`
+  },
+  {
+    id: 12, shortName: "nvidia-smi '23", pillar: "green", pillarLabel: "Green AI", toolOnly: true,
+    title: "NVIDIA System Management Interface (nvidia-smi) Documentation",
+    authors: "NVIDIA", year: 2023, venue: "NVIDIA Docs", relevance: 4,
+    stats: [
+      { val: "16", label: "Max GPUs (dmon)" },
+      { val: "~25%", label: "Sampling on A100" },
+      { val: "1Hz", label: "Our Poll Rate" },
+      { val: "W", label: "Power Unit" }
+    ],
+    formula: 'e_gpu = <span class="highlight">pynvml</span>.nvmlDeviceGetPowerUsage(handle) / 1000 &nbsp;<span class="dim">// mW → W</span>',
+    formulaNote: "This value feeds directly into our gating: logits -= λ · e_gpu",
+    summary: "Documents nvidia-smi (NVML-based) for GPU monitoring. Provides per-GPU power draw, temperature, utilization, clock speeds. dmon mode for continuous polling. Critical caveat: on A100/H100, only ~25% of runtime is actually power-sampled.",
+    insight: "nvidia-smi (via pynvml) is our primary data source for the energy cost vector [e₁, e₂, …, eₙ]. The 25% sampling caveat means our 1-second averaging window must account for interpolation noise. We must validate against a known workload (torch.matmul at TDP).",
+    limitations: [
+      { icon: "📉", text: "Only ~25% of runtime power-sampled on A100/H100 — rest is interpolated" },
+      { icon: "⏱️", text: "Sampling interval may miss short power spikes during expert computation" },
+      { icon: "📊", text: "CLI overhead for frequent queries — pynvml (Python) is more efficient" },
+      { icon: "🔍", text: "No per-kernel or per-expert power attribution — only per-GPU totals" }
+    ],
+    rqTags: ["RQ1"],
+    rqExplain: {
+      RQ1: "Primary data source. The energy vector [e₁,...,eₙ] that feeds into our gating function comes from pynvml (the programmatic nvidia-smi)."
+    },
+    duplicity: "Lower-level interface underlying [11] PyJoules' GPU measurement. Our pynvml usage is a programmatic wrapper around nvidia-smi's power query.",
+    diagram: `<svg width="680" height="200" viewBox="0 0 680 200">
+      <text x="340" y="20" text-anchor="middle" class="svg-text" font-size="13" font-weight="700">nvidia-smi Sampling Caveat on A100/H100</text>
+      <!-- Timeline -->
+      <line x1="60" y1="80" x2="620" y2="80" stroke="#c8cdd8" stroke-width="2"/>
+      <text x="340" y="55" text-anchor="middle" class="svg-text-dim" font-size="10">GPU Runtime →</text>
+      <!-- Sampled sections -->
+      <rect x="60" y="68" width="35" height="24" rx="3" fill="rgba(74,222,128,0.2)" stroke="#22a858"/>
+      <rect x="200" y="68" width="35" height="24" rx="3" fill="rgba(74,222,128,0.2)" stroke="#22a858"/>
+      <rect x="380" y="68" width="35" height="24" rx="3" fill="rgba(74,222,128,0.2)" stroke="#22a858"/>
+      <rect x="540" y="68" width="35" height="24" rx="3" fill="rgba(74,222,128,0.2)" stroke="#22a858"/>
+      <!-- Interpolated sections -->
+      <rect x="95" y="68" width="105" height="24" rx="3" fill="rgba(248,113,113,0.1)" stroke="#d84848" stroke-dasharray="4,3"/>
+      <rect x="235" y="68" width="145" height="24" rx="3" fill="rgba(248,113,113,0.1)" stroke="#d84848" stroke-dasharray="4,3"/>
+      <rect x="415" y="68" width="125" height="24" rx="3" fill="rgba(248,113,113,0.1)" stroke="#d84848" stroke-dasharray="4,3"/>
+      <rect x="575" y="68" width="45" height="24" rx="3" fill="rgba(248,113,113,0.1)" stroke="#d84848" stroke-dasharray="4,3"/>
+      <!-- Legend -->
+      <rect x="180" y="115" width="14" height="14" rx="3" fill="rgba(74,222,128,0.2)" stroke="#22a858"/>
+      <text x="200" y="126" class="svg-text-green" font-size="10">Sampled (~25%)</text>
+      <rect x="320" y="115" width="14" height="14" rx="3" fill="rgba(248,113,113,0.1)" stroke="#d84848" stroke-dasharray="4,3"/>
+      <text x="340" y="126" class="svg-text-red" font-size="10">Interpolated (~75%)</text>
+      <!-- Mitigation -->
+      <rect x="140" y="145" width="400" height="36" rx="8" fill="rgba(250,204,21,0.06)" stroke="#a88b12"/>
+      <text x="340" y="163" text-anchor="middle" class="svg-text-yellow" font-size="10" font-weight="600">Mitigation: 1s averaging window + validation against torch.matmul at TDP</text>
+      <text x="340" y="176" text-anchor="middle" class="svg-text-dim" font-size="9">(from M2 risk mitigations in roadmap)</text>
+    </svg>`
+  },
+  {
+    id: 13, shortName: "Hooker '21", pillar: "cross", pillarLabel: "Cross-Cut",
+    title: "The Hardware Lottery",
+    authors: "Sara Hooker", year: 2021, venue: "Comm. ACM", relevance: 3,
+    stats: [
+      { val: "⚙️", label: "HW Determines" },
+      { val: "🔒", label: "Lock-in Risk" },
+      { val: "📜", label: "Historical" },
+      { val: "🎰", label: "Lottery" }
+    ],
+    formula: 'Success(algorithm) = f( <span class="highlight">hardware_fit</span>, merit ) &nbsp;<span class="dim">not just merit</span>',
+    formulaNote: "Our method is hardware-coupled by design — both strength and risk",
+    summary: "Position paper arguing research ideas succeed based on hardware alignment, not intrinsic merit. Symbolic AI thrived on serial hardware; neural nets languished until GPUs. Specialized accelerators create lock-in to specific computational patterns.",
+    insight: "Our energy-aware routing is hardware-coupled by design — it reads GPU power states and adapts accordingly. This is both a strength (responds to real hardware conditions) and a risk (behavior depends on GPU heterogeneity). May be irrelevant on future hardware with uniform power profiles.",
+    limitations: [
+      { icon: "📖", text: "Purely qualitative historical analysis — no quantitative validation" },
+      { icon: "🔮", text: "Predictive power for future research directions unclear" },
+      { icon: "🔧", text: "Does not propose solutions to mitigate hardware lottery effects" },
+      { icon: "📊", text: "No methodology for detecting when hardware lottery is limiting current research" }
+    ],
+    rqTags: ["RQ1"],
+    rqExplain: {
+      RQ1: "Contextualizes our approach: energy-aware routing works on heterogeneous GPU clusters (current reality) but may not generalize to uniform future hardware. We should discuss this as a limitation."
+    },
+    duplicity: "Philosophical framing paper like [7] Schwartz; [7] focuses on compute cost, [13] on hardware-algorithm co-dependence.",
+    diagram: `<svg width="680" height="210" viewBox="0 0 680 210">
+      <text x="340" y="20" text-anchor="middle" class="svg-text" font-size="13" font-weight="700">Hardware Lottery → Our Risk/Opportunity</text>
+      <!-- Two eras -->
+      <rect x="60" y="50" width="240" height="65" rx="8" fill="rgba(248,113,113,0.06)" stroke="#d84848"/>
+      <text x="180" y="70" text-anchor="middle" class="svg-text-red" font-size="11" font-weight="600">Era: Homogeneous GPUs</text>
+      <text x="180" y="88" text-anchor="middle" class="svg-text-dim" font-size="10">All GPUs same power profile</text>
+      <text x="180" y="104" text-anchor="middle" class="svg-text-dim" font-size="10">e₁ ≈ e₂ ≈ ... ≈ eₙ → λ has no effect</text>
+      <rect x="380" y="50" width="240" height="65" rx="8" fill="rgba(74,222,128,0.08)" stroke="#22a858"/>
+      <text x="500" y="70" text-anchor="middle" class="svg-text-green" font-size="11" font-weight="600">Era: Heterogeneous GPUs</text>
+      <text x="500" y="88" text-anchor="middle" class="svg-text-dim" font-size="10">Mixed GPU types, DVFS states</text>
+      <text x="500" y="104" text-anchor="middle" class="svg-text-dim" font-size="10">e₁ ≠ e₂ ≠ eₙ → λ exploits gaps</text>
+      <text x="340" y="85" text-anchor="middle" class="svg-text-dim" font-size="16">vs</text>
+      <!-- Our position -->
+      <rect x="160" y="140" width="360" height="50" rx="8" fill="rgba(250,204,21,0.06)" stroke="#a88b12"/>
+      <text x="340" y="160" text-anchor="middle" class="svg-text-yellow" font-size="10" font-weight="600">Our Method: optimized for heterogeneous (current reality)</text>
+      <text x="340" y="178" text-anchor="middle" class="svg-text-dim" font-size="10">DVFS states, mixed A100/V100, cloud spot instances → real power variation</text>
+    </svg>`
+  }
+];
+
+// ─── Sort papers by ID 1→15 ───
+papers.sort((a, b) => a.id - b.id);
+
+// ─── Render ───
+const tabBar = document.getElementById('tabBar');
+const content = document.getElementById('content');
+
+const pillarColors = { arch: 'pill-arch', analysis: 'pill-analysis', green: 'pill-green', cross: 'pill-cross' };
+const pillarBorder = { arch: '#2563eb', analysis: '#7c3aed', green: '#059669', cross: '#d97706' };
+const pillarNames = { arch: 'A — MoE Architecture', analysis: 'B — MoE Analysis', green: 'C — Green AI / Energy', cross: 'D — Cross-Cutting' };
+const pillarOrder = ['arch', 'analysis', 'green', 'cross'];
+
+// Build sidebar — Synthesis button first, then pillar groups
+const synthBtn = document.createElement('button');
+synthBtn.className = 'tab-btn synth-btn active';
+synthBtn.innerHTML = `<span class="num">★</span> Synthesis &amp; Analysis`;
+synthBtn.id = `tab-synth`;
+synthBtn.onclick = () => switchTab('synth');
+tabBar.appendChild(synthBtn);
+
+pillarOrder.forEach(pil => {
+  const group = document.createElement('div');
+  group.className = 'pillar-group';
+  group.dataset.pillar = pil;
+  const label = document.createElement('div');
+  label.className = 'pillar-label';
+  label.style.color = pillarBorder[pil];
+  label.textContent = pillarNames[pil];
+  group.appendChild(label);
+  papers.forEach((p, i) => {
+    if (p.pillar !== pil) return;
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn';
+    btn.innerHTML = `<span class="num">${p.id}</span> ${p.shortName}${p.toolOnly ? '<span class="tool-dot" title="Tool/Utility only"></span>' : ''}`;
+    btn.onclick = () => switchTab(i);
+    btn.id = `tab-${i}`;
+    btn.dataset.rqs = (p.rqTags || []).join(',');
+    btn.dataset.tool = p.toolOnly ? '1' : '0';
+    group.appendChild(btn);
+  });
+  tabBar.appendChild(group);
+});
+
+// ─── Synthesis panel (analytical overview + charts) ───
+const synthPanel = document.createElement('div');
+synthPanel.className = 'tab-panel active';
+synthPanel.id = 'panel-synth';
+synthPanel.innerHTML = `
+  <div class="synth-hero">
+    <h2>Synthesis: Where Our Project Fits</h2>
+    <p>A bird's-eye view of the 15 papers — what each community cares about, and the specific gap we're filling with energy-aware routing.</p>
+  </div>
+
+  <div class="synth-chart">
+    <h3>1. The Routing Equation — Which Knob Does Each Paper Turn?</h3>
+    <div class="subtitle">Every MoE paper modifies one part of the same gating equation. Our project adds an energy term to the logits.</div>
+    <svg width="900" height="380" viewBox="0 0 900 380">
+      <defs>
+        <marker id="sarr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6Z" fill="#636b82"/></marker>
+      </defs>
+      <!-- Equation bar -->
+      <rect x="80" y="30" width="740" height="60" rx="10" fill="#f0f2f7" stroke="#d8dce6"/>
+      <text x="450" y="55" text-anchor="middle" class="svg-text" font-size="14" font-weight="700">logits = </text>
+      <text x="520" y="55" text-anchor="middle" class="svg-text-accent" font-size="14" font-weight="700">x·W_g</text>
+      <text x="590" y="55" text-anchor="middle" class="svg-text" font-size="14" font-weight="700">−</text>
+      <text x="630" y="55" text-anchor="middle" class="svg-text-yellow" font-size="14" font-weight="700">λ·e_gpu</text>
+      <text x="450" y="77" text-anchor="middle" class="svg-text" font-size="14" font-weight="700">gate = </text>
+      <text x="520" y="77" text-anchor="middle" class="svg-text-purple" font-size="14" font-weight="700">TopK</text>
+      <text x="570" y="77" text-anchor="middle" class="svg-text" font-size="14" font-weight="700">(</text>
+      <text x="610" y="77" text-anchor="middle" class="svg-text-green" font-size="14" font-weight="700">Softmax</text>
+      <text x="670" y="77" text-anchor="middle" class="svg-text" font-size="14" font-weight="700">(logits))</text>
+
+      <!-- Callouts -->
+      <!-- x·W_g: Shazeer, LIMoE -->
+      <line x1="520" y1="90" x2="180" y2="150" stroke="#636b82" stroke-width="1" stroke-dasharray="3,3"/>
+      <rect x="60" y="150" width="240" height="70" rx="8" fill="rgba(59,92,204,.06)" stroke="#3b5ccc"/>
+      <text x="180" y="170" text-anchor="middle" class="svg-text-accent" font-size="12" font-weight="700">1. Scoring (x·W_g)</text>
+      <text x="180" y="188" text-anchor="middle" class="svg-text" font-size="10">Shazeer '17 — base gating</text>
+      <text x="180" y="204" text-anchor="middle" class="svg-text" font-size="10">LIMoE '22 — + entropy reg.</text>
+
+      <!-- λ·e_gpu: Ours -->
+      <line x1="630" y1="65" x2="450" y2="280" stroke="#916b0a" stroke-width="2"/>
+      <rect x="340" y="280" width="220" height="70" rx="8" fill="rgba(196,107,26,.08)" stroke="#c46b1a" stroke-width="2"/>
+      <text x="450" y="300" text-anchor="middle" class="svg-text-yellow" font-size="12" font-weight="700">2. Energy penalty (OURS)</text>
+      <text x="450" y="318" text-anchor="middle" class="svg-text" font-size="10">−λ·e_gpu injected in logits</text>
+      <text x="450" y="334" text-anchor="middle" class="svg-text" font-size="10">real-time nvidia-smi signal</text>
+
+      <!-- Softmax: Soft MoE -->
+      <line x1="610" y1="90" x2="720" y2="150" stroke="#636b82" stroke-width="1" stroke-dasharray="3,3"/>
+      <rect x="600" y="150" width="240" height="70" rx="8" fill="rgba(22,128,74,.06)" stroke="#16804a"/>
+      <text x="720" y="170" text-anchor="middle" class="svg-text-green" font-size="12" font-weight="700">3. Softmax / Normalization</text>
+      <text x="720" y="188" text-anchor="middle" class="svg-text" font-size="10">Soft MoE '23 — blend all</text>
+      <text x="720" y="204" text-anchor="middle" class="svg-text" font-size="10">(no discrete picking)</text>
+
+      <!-- TopK: Switch, GShard, V-MoE, MoE-Mamba -->
+      <line x1="520" y1="90" x2="450" y2="150" stroke="#636b82" stroke-width="1" stroke-dasharray="3,3"/>
+      <rect x="320" y="150" width="260" height="90" rx="8" fill="rgba(113,67,198,.06)" stroke="#7143c6"/>
+      <text x="450" y="170" text-anchor="middle" class="svg-text-purple" font-size="12" font-weight="700">4. Selection (TopK)</text>
+      <text x="450" y="188" text-anchor="middle" class="svg-text" font-size="10">Switch '22 — k=1</text>
+      <text x="450" y="202" text-anchor="middle" class="svg-text" font-size="10">GShard '20 — k=2</text>
+      <text x="450" y="216" text-anchor="middle" class="svg-text" font-size="10">V-MoE '21 — Batch Priority</text>
+      <text x="450" y="230" text-anchor="middle" class="svg-text" font-size="10">MoE-Mamba '24 — arch-agnostic</text>
+    </svg>
+    <div class="legend">
+      <span><span class="sw" style="background:#3b5ccc"></span>Scoring</span>
+      <span><span class="sw" style="background:#c46b1a"></span>Energy (ours)</span>
+      <span><span class="sw" style="background:#16804a"></span>Normalization</span>
+      <span><span class="sw" style="background:#7143c6"></span>Selection</span>
+    </div>
+  </div>
+
+  <div class="synth-chart">
+    <h3>2. Thermometer vs Thermostat — What Each Green AI Paper Actually Does</h3>
+    <div class="subtitle">Existing Green AI work <em>measures and reports</em> energy. Our project is the first to <em>act on</em> it inside the routing loop.</div>
+    <svg width="900" height="340" viewBox="0 0 900 340">
+      <!-- Two columns -->
+      <rect x="30" y="20" width="400" height="300" rx="10" fill="rgba(59,92,204,.04)" stroke="#d8dce6"/>
+      <text x="230" y="46" text-anchor="middle" class="svg-text-accent" font-size="14" font-weight="800">THERMOMETER</text>
+      <text x="230" y="64" text-anchor="middle" class="svg-text-dim" font-size="10">measure + report energy (observational)</text>
+
+      <rect x="470" y="20" width="400" height="300" rx="10" fill="rgba(22,128,74,.04)" stroke="#d8dce6"/>
+      <text x="670" y="46" text-anchor="middle" class="svg-text-green" font-size="14" font-weight="800">THERMOSTAT (OURS)</text>
+      <text x="670" y="64" text-anchor="middle" class="svg-text-dim" font-size="10">feed energy back into the decision (closed loop)</text>
+
+      <!-- Thermometer papers -->
+      <rect x="50" y="80" width="360" height="32" rx="6" fill="#ffffff" stroke="#b8c2d8"/>
+      <text x="64" y="101" class="svg-text" font-size="11" font-weight="700">[7] Schwartz '20</text>
+      <text x="200" y="101" class="svg-text-dim" font-size="10">— position paper: "measure efficiency"</text>
+
+      <rect x="50" y="120" width="360" height="32" rx="6" fill="#ffffff" stroke="#b8c2d8"/>
+      <text x="64" y="141" class="svg-text" font-size="11" font-weight="700">[8] Patterson '21</text>
+      <text x="200" y="141" class="svg-text-dim" font-size="10">— carbon audit of GPT-3, T5, etc.</text>
+
+      <rect x="50" y="160" width="360" height="32" rx="6" fill="#ffffff" stroke="#b8c2d8"/>
+      <text x="64" y="181" class="svg-text" font-size="11" font-weight="700">[9] Green Algo '21</text>
+      <text x="200" y="181" class="svg-text-dim" font-size="10">— CO₂ calculator website</text>
+
+      <rect x="50" y="200" width="360" height="32" rx="6" fill="#ffffff" stroke="#b8c2d8"/>
+      <text x="64" y="221" class="svg-text" font-size="11" font-weight="700">[10] Henderson '20</text>
+      <text x="200" y="221" class="svg-text-dim" font-size="10">— reporting framework (logging)</text>
+
+      <rect x="50" y="240" width="360" height="32" rx="6" fill="#ffffff" stroke="#b8c2d8"/>
+      <text x="64" y="261" class="svg-text" font-size="11" font-weight="700">[11] PyJoules '22</text>
+      <text x="200" y="261" class="svg-text-dim" font-size="10">— CPU energy sensor library</text>
+
+      <rect x="50" y="280" width="360" height="32" rx="6" fill="#ffffff" stroke="#b8c2d8"/>
+      <text x="64" y="301" class="svg-text" font-size="11" font-weight="700">[12] nvidia-smi</text>
+      <text x="200" y="301" class="svg-text-dim" font-size="10">— GPU power sensor (we use this!)</text>
+
+      <!-- Arrow to thermostat -->
+      <line x1="420" y1="170" x2="470" y2="170" stroke="#c46b1a" stroke-width="2" marker-end="url(#sarr)"/>
+      <text x="445" y="162" text-anchor="middle" class="svg-text-orange" font-size="9" font-weight="700">feeds</text>
+
+      <!-- Thermostat (ours) -->
+      <rect x="490" y="90" width="360" height="90" rx="8" fill="rgba(22,128,74,.08)" stroke="#16804a" stroke-width="2"/>
+      <text x="670" y="113" text-anchor="middle" class="svg-text-green" font-size="13" font-weight="700">Energy-Aware Router</text>
+      <text x="670" y="133" text-anchor="middle" class="svg-text" font-size="11">logits = x·W_g − λ·e_gpu</text>
+      <text x="670" y="152" text-anchor="middle" class="svg-text-dim" font-size="10">e_gpu read live from nvidia-smi</text>
+      <text x="670" y="168" text-anchor="middle" class="svg-text-dim" font-size="10">every forward pass, per-expert</text>
+
+      <rect x="490" y="200" width="360" height="50" rx="8" fill="rgba(22,128,74,.04)" stroke="#16804a" stroke-dasharray="4,3"/>
+      <text x="670" y="220" text-anchor="middle" class="svg-text-green" font-size="11" font-weight="600">L = L_task + α·L_balance + β·L_energy</text>
+      <text x="670" y="238" text-anchor="middle" class="svg-text-dim" font-size="10">multi-objective loss (template from LIMoE)</text>
+
+      <rect x="490" y="270" width="360" height="36" rx="8" fill="rgba(22,128,74,.04)" stroke="#16804a" stroke-dasharray="4,3"/>
+      <text x="670" y="293" text-anchor="middle" class="svg-text-green" font-size="10" font-weight="600">⟲ Pareto frontier: perplexity vs Joules</text>
+    </svg>
+    <div class="legend">
+      <span><span class="sw" style="background:#3b5ccc"></span>Thermometer (measure)</span>
+      <span><span class="sw" style="background:#16804a"></span>Thermostat (control — ours)</span>
+    </div>
+  </div>
+
+  <div class="synth-chart">
+    <h3>3. Capability Coverage Matrix — Who Does What</h3>
+    <div class="subtitle">Across the 15 papers, no one combines all four capabilities. That intersection is our contribution.</div>
+    <svg width="900" height="360" viewBox="0 0 900 360">
+      <!-- Headers -->
+      <text x="220" y="32" text-anchor="start" class="svg-text" font-size="11" font-weight="700">Paper</text>
+      <text x="440" y="32" text-anchor="middle" class="svg-text" font-size="10" font-weight="700">MoE Routing</text>
+      <text x="540" y="32" text-anchor="middle" class="svg-text" font-size="10" font-weight="700">Expert Analysis</text>
+      <text x="640" y="32" text-anchor="middle" class="svg-text" font-size="10" font-weight="700">Energy Measurement</text>
+      <text x="780" y="32" text-anchor="middle" class="svg-text-yellow" font-size="10" font-weight="800">Energy IN Routing</text>
+
+      ${(() => {
+        const rows = [
+          { name: '[1] Shazeer \'17', r: 1, a: 0, e: 0, er: 0 },
+          { name: '[2] Switch \'22', r: 1, a: 0, e: 0, er: 0 },
+          { name: '[3] GShard \'20', r: 1, a: 0, e: 0, er: 0 },
+          { name: '[4] V-MoE \'21', r: 1, a: 1, e: 0, er: 0 },
+          { name: '[5] Clark \'22', r: 0, a: 1, e: 0, er: 0 },
+          { name: '[6] Soft MoE \'23', r: 1, a: 1, e: 0, er: 0 },
+          { name: '[7] Schwartz \'20', r: 0, a: 0, e: 1, er: 0 },
+          { name: '[8] Patterson \'21', r: 0, a: 0, e: 1, er: 0 },
+          { name: '[9]-[12] Green tooling', r: 0, a: 0, e: 1, er: 0 },
+          { name: '[13] Hooker \'21', r: 0, a: 0, e: 0, er: 0 },
+          { name: '[14] LIMoE \'22', r: 1, a: 1, e: 0, er: 0 },
+          { name: '[15] MoE-Mamba \'24', r: 1, a: 0, e: 0, er: 0 },
+          { name: '★ OURS', r: 1, a: 1, e: 1, er: 1 }
+        ];
+        const yStep = 22;
+        const cellX = { r: 440, a: 540, e: 640, er: 780 };
+        const dot = (x, y, v, isOurs) => {
+          if (v === 1) {
+            const fill = isOurs ? '#16804a' : '#3b5ccc';
+            return `<circle cx="${x}" cy="${y}" r="7" fill="${fill}"/>`;
+          }
+          return `<circle cx="${x}" cy="${y}" r="5" fill="#ffffff" stroke="#d8dce6" stroke-width="1.5"/>`;
+        };
+        return rows.map((row, idx) => {
+          const y = 56 + idx * yStep;
+          const isOurs = row.name.startsWith('★');
+          const bg = isOurs
+            ? `<rect x="30" y="${y-14}" width="840" height="22" rx="4" fill="rgba(22,128,74,.08)"/>`
+            : (idx % 2 === 0 ? `<rect x="30" y="${y-14}" width="840" height="22" fill="#f8f9fc"/>` : '');
+          const weight = isOurs ? '800' : '500';
+          const color = isOurs ? '#16804a' : '#1e2432';
+          return `${bg}
+            <text x="48" y="${y+1}" class="svg-text" font-size="10" font-weight="${weight}" fill="${color}">${row.name}</text>
+            ${dot(cellX.r, y-3, row.r, isOurs)}
+            ${dot(cellX.a, y-3, row.a, isOurs)}
+            ${dot(cellX.e, y-3, row.e, isOurs)}
+            ${dot(cellX.er, y-3, row.er, isOurs)}`;
+        }).join('');
+      })()}
+    </svg>
+    <div class="legend">
+      <span><span class="sw" style="background:#3b5ccc;border-radius:50%"></span>Capability present</span>
+      <span><span class="sw" style="background:#16804a;border-radius:50%"></span>Our contribution</span>
+      <span><span class="sw" style="background:#ffffff;border:1.5px solid #d8dce6;border-radius:50%"></span>Absent</span>
+    </div>
+  </div>
+
+  <div class="synth-chart">
+    <h3>4. The Four Recent Routing Alternatives — In One Picture</h3>
+    <div class="subtitle">V-MoE, Soft MoE, LIMoE, and MoE-Mamba each turn a different knob. Our work turns a fifth knob (energy).</div>
+    <svg width="900" height="300" viewBox="0 0 900 300">
+      <!-- Central equation reminder -->
+      <rect x="320" y="130" width="260" height="40" rx="8" fill="#f0f2f7" stroke="#d8dce6"/>
+      <text x="450" y="155" text-anchor="middle" class="svg-text" font-size="12" font-weight="700">Gate(x) = TopK(Softmax(x·W_g))</text>
+
+      <!-- V-MoE -->
+      <rect x="20" y="20" width="200" height="80" rx="10" fill="rgba(37,99,235,.06)" stroke="#2563eb"/>
+      <text x="120" y="42" text-anchor="middle" class="svg-text-accent" font-size="12" font-weight="700">V-MoE (2021)</text>
+      <text x="120" y="60" text-anchor="middle" class="svg-text-dim" font-size="10">changes: TopK behavior</text>
+      <text x="120" y="78" text-anchor="middle" class="svg-text" font-size="10">Batch Priority: easy</text>
+      <text x="120" y="92" text-anchor="middle" class="svg-text" font-size="10">patches get dropped first</text>
+      <line x1="220" y1="90" x2="340" y2="140" stroke="#2563eb" stroke-width="1" stroke-dasharray="3,3"/>
+
+      <!-- Soft MoE -->
+      <rect x="680" y="20" width="200" height="80" rx="10" fill="rgba(5,150,105,.06)" stroke="#059669"/>
+      <text x="780" y="42" text-anchor="middle" class="svg-text-green" font-size="12" font-weight="700">Soft MoE (2023)</text>
+      <text x="780" y="60" text-anchor="middle" class="svg-text-dim" font-size="10">removes: TopK entirely</text>
+      <text x="780" y="78" text-anchor="middle" class="svg-text" font-size="10">weighted blend of all</text>
+      <text x="780" y="92" text-anchor="middle" class="svg-text" font-size="10">experts, no dropping</text>
+      <line x1="680" y1="90" x2="560" y2="140" stroke="#059669" stroke-width="1" stroke-dasharray="3,3"/>
+
+      <!-- LIMoE -->
+      <rect x="20" y="200" width="200" height="80" rx="10" fill="rgba(124,58,237,.06)" stroke="#7c3aed"/>
+      <text x="120" y="222" text-anchor="middle" class="svg-text-purple" font-size="12" font-weight="700">LIMoE (2022)</text>
+      <text x="120" y="240" text-anchor="middle" class="svg-text-dim" font-size="10">adds: loss term</text>
+      <text x="120" y="258" text-anchor="middle" class="svg-text" font-size="10">per-modality entropy</text>
+      <text x="120" y="272" text-anchor="middle" class="svg-text" font-size="10">regularization (template!)</text>
+      <line x1="220" y1="210" x2="340" y2="160" stroke="#7c3aed" stroke-width="1" stroke-dasharray="3,3"/>
+
+      <!-- MoE-Mamba -->
+      <rect x="680" y="200" width="200" height="80" rx="10" fill="rgba(217,119,6,.06)" stroke="#d97706"/>
+      <text x="780" y="222" text-anchor="middle" class="svg-text-orange" font-size="12" font-weight="700">MoE-Mamba (2024)</text>
+      <text x="780" y="240" text-anchor="middle" class="svg-text-dim" font-size="10">ports: same eqn elsewhere</text>
+      <text x="780" y="258" text-anchor="middle" class="svg-text" font-size="10">MoE works in Mamba too —</text>
+      <text x="780" y="272" text-anchor="middle" class="svg-text" font-size="10">arch-agnostic primitive</text>
+      <line x1="680" y1="210" x2="560" y2="160" stroke="#d97706" stroke-width="1" stroke-dasharray="3,3"/>
+
+      <!-- Ours callout -->
+      <rect x="320" y="195" width="260" height="90" rx="10" fill="rgba(196,107,26,.08)" stroke="#c46b1a" stroke-width="2"/>
+      <text x="450" y="217" text-anchor="middle" class="svg-text-yellow" font-size="12" font-weight="800">★ OURS</text>
+      <text x="450" y="237" text-anchor="middle" class="svg-text-dim" font-size="10">adds: energy term in logits</text>
+      <text x="450" y="254" text-anchor="middle" class="svg-text" font-size="11">logits = x·W_g − λ·e_gpu</text>
+      <text x="450" y="272" text-anchor="middle" class="svg-text-dim" font-size="10">closed-loop hardware feedback</text>
+      <line x1="450" y1="195" x2="450" y2="170" stroke="#c46b1a" stroke-width="2"/>
+    </svg>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="icon">🧭</span> HOW TO USE THIS GUIDE</div>
+    <p style="font-size:13px; line-height:1.7;">
+      Pick any paper from the sidebar to dive in. Use the <strong>RQ filter chips</strong> at the top of the sidebar to narrow to papers relevant to a specific research question (RQ1: Pareto, RQ2: token-complexity routing, RQ3: GLUE under energy budget). Papers that introduce plain-language takeaways for beginners are marked with a purple <em>"Plain Language"</em> section. Green AI papers include a green <em>"Research Gap"</em> callout explaining how our project extends beyond measurement into closed-loop control.
+    </p>
+  </div>
+`;
+content.appendChild(synthPanel);
+
+papers.forEach((p, i) => {
+  const panel = document.createElement('div');
+  panel.className = 'tab-panel';
+  panel.id = `panel-${i}`;
+
+  const starsHtml = '★'.repeat(p.relevance) + '<span class="stars-dim">' + '★'.repeat(5 - p.relevance) + '</span>';
+
+  const rqTagsHtml = p.rqTags.map(rq =>
+    `<div class="rq-tag active"><strong>${rq}</strong><p>${p.rqExplain[rq]}</p></div>`
+  ).join('');
+
+  const limHtml = p.limitations.map(l =>
+    `<div class="crit-item"><span class="crit-icon">${l.icon}</span><span class="crit-text">${l.text}</span></div>`
+  ).join('');
+
+  const statsHtml = p.stats.map(s => {
+    let col = 'var(--text)';
+    return `<div class="stat-card"><div class="stat-val" style="color:${col}">${s.val}</div><div class="stat-label">${s.label}</div></div>`;
+  }).join('');
+
+  const dupHtml = p.duplicity
+    ? `<div class="dup-box"><strong>Duplicity with Earlier Papers</strong><p>${p.duplicity}</p></div>`
+    : '';
+
+  const plainHtml = p.plainLanguage
+    ? `<div class="plain-box"><strong>🗣️ Plain Language (for beginners)</strong><p>${p.plainLanguage}</p></div>`
+    : '';
+
+  const gapHtml = p.pillar === 'green'
+    ? `<div class="gap-box"><strong>🌡️ Thermometer vs Thermostat</strong><p>This paper is part of the "thermometer" layer — it measures, reports, or provides sensors for energy. It does <em>not</em> change how a model makes decisions. Our project uses this work as <em>input</em> (we read e_gpu from sensors like nvidia-smi) and extends the stack with a "thermostat": we feed that measurement back into the routing logits in real time. The gap we're closing is <code>e_gpu → routing decision</code>.</p></div>`
+    : '';
+
+  panel.innerHTML = `
+    <div class="paper-header">
+      <div class="paper-num" style="color:${pillarBorder[p.pillar]}">${p.id}</div>
+      <div class="paper-meta">
+        <h2>${p.title}</h2>
+        <div class="authors">${p.authors}</div>
+        <div class="badge-row">
+          <span class="badge badge-venue">${p.venue}</span>
+          <span class="badge badge-year">${p.year}</span>
+          <span class="badge badge-relevance"><span class="stars">${starsHtml}</span></span>
+          ${p.toolOnly ? '<span class="badge badge-tool">🛠 Tool / Utility Only</span>' : ''}
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-row">${statsHtml}</div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🧮</span> CORE FORMULA / MECHANISM</div>
+      <div class="formula">${p.formula}</div>
+      <p style="text-align:center; font-size:11px; color:var(--text-dim); margin-top:4px;">${p.formulaNote}</p>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🎯</span> VISUAL DIAGRAM</div>
+      <div class="diagram-box">${p.diagram}</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">📝</span> SUMMARY</div>
+      <p style="font-size:13px; line-height:1.7;">${p.summary}</p>
+    </div>
+
+    ${plainHtml}
+
+    <div class="insight-box">
+      <strong>Key Insight for Our Project</strong>
+      <p>${p.insight}</p>
+    </div>
+
+    ${gapHtml}
+
+    ${dupHtml}
+
+    <div class="section">
+      <div class="section-title"><span class="icon">⚠️</span> LIMITATIONS &amp; CRITIQUES</div>
+      <div class="crit-list">${limHtml}</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🏷️</span> RQ TAGS &amp; RELEVANCE</div>
+      <div class="rq-tags">${rqTagsHtml}</div>
+    </div>
+
+    <div class="nav-row">
+      <button class="nav-btn" ${i === 0 ? 'disabled' : ''} onclick="switchTab(${i - 1})">← Previous</button>
+      <span style="font-size:12px; color:var(--text-dim); align-self:center;">${i + 1} / ${papers.length}</span>
+      <button class="nav-btn" ${i === papers.length - 1 ? 'disabled' : ''} onclick="switchTab(${i + 1})">Next →</button>
+    </div>
+  `;
+  content.appendChild(panel);
+});
+
+function switchTab(idx) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  const tabEl = document.getElementById(`tab-${idx}`);
+  const panelEl = document.getElementById(`panel-${idx}`);
+  if (tabEl) tabEl.classList.add('active');
+  if (panelEl) panelEl.classList.add('active');
+  if (tabEl) tabEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  document.querySelector('.content').scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Keyboard navigation (up/down for vertical sidebar)
+document.addEventListener('keydown', (e) => {
+  const active = document.querySelector('.tab-btn.active');
+  if (!active) return;
+  // Build visible tab list (respects filter)
+  const visible = Array.from(document.querySelectorAll('.tab-btn:not(.hidden)'));
+  const pos = visible.indexOf(active);
+  if (pos === -1) return;
+  if ((e.key === 'ArrowDown' || e.key === 'ArrowRight') && pos < visible.length - 1) {
+    e.preventDefault();
+    const next = visible[pos + 1];
+    const nextIdx = next.id.replace('tab-', '');
+    switchTab(nextIdx === 'synth' ? 'synth' : parseInt(nextIdx));
+  }
+  if ((e.key === 'ArrowUp' || e.key === 'ArrowLeft') && pos > 0) {
+    e.preventDefault();
+    const prev = visible[pos - 1];
+    const prevIdx = prev.id.replace('tab-', '');
+    switchTab(prevIdx === 'synth' ? 'synth' : parseInt(prevIdx));
+  }
+});
+
+// ─── RQ filter chips ───
+document.querySelectorAll('#filterChips .chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('#filterChips .chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    const filter = chip.dataset.filter;
+    // Show/hide paper buttons based on RQ tag
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      if (btn.id === 'tab-synth') { btn.classList.remove('hidden'); return; }
+      if (filter === 'all') { btn.classList.remove('hidden'); return; }
+      if (filter === 'tool') {
+        if (btn.dataset.tool === '1') btn.classList.remove('hidden');
+        else btn.classList.add('hidden');
+        return;
+      }
+      const rqs = (btn.dataset.rqs || '').split(',');
+      if (rqs.includes(filter)) btn.classList.remove('hidden');
+      else btn.classList.add('hidden');
+    });
+    // Hide pillar groups that have no visible children
+    document.querySelectorAll('.pillar-group').forEach(g => {
+      const anyVisible = Array.from(g.querySelectorAll('.tab-btn')).some(b => !b.classList.contains('hidden'));
+      g.classList.toggle('empty', !anyVisible);
+    });
+  });
+});
+</script>
+</body>
+</html>

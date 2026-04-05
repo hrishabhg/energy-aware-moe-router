@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Energy-Aware MoE Router — Architecture</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    background: #0d1117;
+    color: #c9d1d9;
+    padding: 32px;
+    line-height: 1.5;
+  }
+  h1 {
+    font-size: 18px;
+    color: #58a6ff;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  h2 {
+    font-size: 15px;
+    color: #8b949e;
+    margin-bottom: 24px;
+    font-weight: 400;
+  }
+  .section {
+    margin-bottom: 36px;
+  }
+  .section-title {
+    font-size: 14px;
+    color: #f0883e;
+    font-weight: 600;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  pre {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.45;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 20px;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .highlight { color: #7ee787; }
+  .energy { color: #f97583; }
+  .router { color: #d2a8ff; }
+  .data { color: #79c0ff; }
+  .dim { color: #484f58; }
+  .note {
+    font-size: 12px;
+    color: #8b949e;
+    margin-top: 8px;
+    padding-left: 4px;
+  }
+  .legend {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    font-size: 12px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot {
+    width: 10px; height: 10px; border-radius: 50%; display: inline-block;
+  }
+</style>
+</head>
+<body>
+
+<h1>Energy-Aware MoE Router</h1>
+<h2>Architecture Diagrams — Shazeer (2017) baseline vs. your modification</h2>
+
+<div class="legend">
+  <div class="legend-item"><span class="legend-dot" style="background:#79c0ff"></span> Data flow</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#d2a8ff"></span> Router / Gating</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#f97583"></span> Energy signal (your contribution)</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#7ee787"></span> Experts</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#484f58"></span> Inactive path</div>
+</div>
+
+<!-- ============================================================ -->
+<div class="section">
+<div class="section-title">1. Standard MoE Layer (Shazeer 2017 / Switch Transformer)</div>
+<pre>
+                         <span class="data">Input Token x</span>
+                              <span class="data">│</span>
+                   ┌──────────<span class="data">┴</span>──────────┐
+                   │                     │
+                   ▼                     ▼
+          <span class="router">┌─────────────────┐</span>    <span class="dim">┌─────────────────────────────────────┐</span>
+          <span class="router">│  Gating Network │</span>    <span class="dim">│          Expert Pool                │</span>
+          <span class="router">│                 │</span>    <span class="dim">│                                     │</span>
+          <span class="router">│  h = x · W_g    │</span>    <span class="dim">│  ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐    │</span>
+          <span class="router">│  + noise        │</span>    <span class="dim">│  │ E_1 │ │ E_2 │ │ E_3 │ │ E_4 │    │</span>
+          <span class="router">│                 │</span>    <span class="dim">│  │ FFN │ │ FFN │ │ FFN │ │ FFN │    │</span>
+          <span class="router">│  TopK(h, k=1)   │</span>    <span class="dim">│  └──┬──┘ └──┬──┘ └──┬──┘ └──┬──┘    │</span>
+          <span class="router">│       │         │</span>    <span class="dim">│     │       │       │       │       │</span>
+          <span class="router">│  Softmax        │</span>    <span class="dim">│  ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐    │</span>
+          <span class="router">│       │         │</span>    <span class="dim">│  │ E_5 │ │ E_6 │ │ E_7 │ │ E_8 │    │</span>
+          <span class="router">│       ▼         │</span>    <span class="dim">│  │ FFN │ │ FFN │ │ FFN │ │ FFN │    │</span>
+          <span class="router">│  g = [0,0,.7,   │</span>    <span class="dim">│  └─────┘ └─────┘ └─────┘ └─────┘    │</span>
+          <span class="router">│   0,0,0,.3,0]   │</span>    <span class="dim">│                                     │</span>
+          <span class="router">└────────┬────────┘</span>    <span class="dim">└──────────────────┬──────────────────┘</span>
+                   │                                │
+                   │  <span class="router">route to selected</span>             │
+                   └──────────┬─────────────────────┘
+                              │
+                              ▼
+                    <span class="highlight">┌───────────────────┐</span>
+                    <span class="highlight">│  Selected Expert  │</span>      <span class="dim">only E_3 runs</span>
+                    <span class="highlight">│   y = E_3(x)      │</span>      <span class="dim">(top-1 routing)</span>
+                    <span class="highlight">└─────────┬─────────┘</span>
+                              │
+                              ▼
+                    <span class="data">Weighted output: g_3 · y</span>
+                              │
+                              ▼
+                      <span class="data">+ Residual (x)</span>
+                              │
+                              ▼
+                       <span class="data">Output token</span>
+</pre>
+<div class="note">G(x) = Softmax(KeepTopK(x·W_g + noise, k)) — noise aids exploration. No energy awareness.</div>
+</div>
+
+<!-- ============================================================ -->
+<div class="section">
+<div class="section-title">2. Your Energy-Aware MoE Layer (this project)</div>
+<pre>
+                         <span class="data">Input Token x</span>
+                              <span class="data">│</span>
+                   ┌──────────<span class="data">┴</span>────────┐
+                   │                   │
+                   ▼                   │
+          <span class="router">┌─────────────────┐</span>          │
+          <span class="router">│  Gating Network │</span>          │
+          <span class="router">│                 │</span>          │
+          <span class="router">│  h = x · W_g    │</span>          │         <span class="energy">┌──────────────────────┐</span>
+          <span class="router">│                 │</span>          │         <span class="energy">│    Energy Monitor    │</span>
+          <span class="router">│    ┌───────┐    │</span>          │         <span class="energy">│                      │</span>
+          <span class="router">│    │</span> <span class="energy">h - λ·e</span> <span class="router">│  │</span><span class="energy">◄─────────┼─────────│  pynvml polls GPUs   │</span>
+          <span class="router">│    └───┬───┘    │</span>          │         <span class="energy">│  at ~1 Hz            │</span>
+          <span class="router">│        │        │</span>          │         <span class="energy">│                      │</span>
+          <span class="router">│  TopK(., k=1)   │</span>          │         <span class="energy">│  e = [e₁,e₂,...,e₈]  │</span>
+          <span class="router">│        │        │</span>          │         <span class="energy">│  (watts per GPU,     │</span>
+          <span class="router">│  Softmax        │</span>          │         <span class="energy">│   normalized)        │</span>
+          <span class="router">│        │        │</span>          │         <span class="energy">│                      │</span>
+          <span class="router">│        ▼        │</span>          │         <span class="energy">│  detached from graph │</span>
+          <span class="router">│  g = [0,0,0,    │</span>          │         <span class="energy">│  (no grad through e) │</span>
+          <span class="router">│   0,0,1.0,0,0]  │</span>          │         <span class="energy">└──────────────────────┘</span>
+          <span class="router">└────────┬────────┘</span>          │
+                   │                     │
+                   │  <span class="router">route to cheapest</span>    │
+                   │  <span class="router">high-affinity expert</span> │
+                   │                     │
+                   ▼                     ▼
+          <span class="dim">┌─────┐ ┌─────┐</span> <span class="highlight">┌─────┐</span> <span class="dim">┌─────┐</span>
+          <span class="dim">│ E_1 │ │ E_2 │</span> <span class="highlight">│ E_6 │</span> <span class="dim">│ E_4 │</span>       <span class="energy">GPU Power States</span>
+          <span class="dim">│ GPU0│ │ GPU0│</span> <span class="highlight">│ GPU2│</span> <span class="dim">│ GPU1│</span>       <span class="energy">─────────────────</span>
+          <span class="dim">│ 250W│ │ 250W│</span> <span class="highlight">│ 80W │</span> <span class="dim">│ 200W│</span>       <span class="energy">GPU0: 250W (high)</span>
+          <span class="dim">└─────┘ └─────┘</span> <span class="highlight">└──┬──┘</span> <span class="dim">└─────┘</span>       <span class="energy">GPU1: 200W (med)</span>
+          <span class="dim">┌─────┐</span> <span class="highlight">┌─────┐</span> <span class="dim">┌─────┐ ┌─────┐</span>       <span class="energy">GPU2:  80W (low)  ◄ chosen</span>
+          <span class="dim">│ E_5 │</span> <span class="highlight">│ E_6 │</span> <span class="dim">│ E_7 │ │ E_8 │</span>       <span class="energy">GPU3: 180W (med)</span>
+          <span class="dim">│ GPU2│</span> <span class="highlight">│ GPU2│</span> <span class="dim">│ GPU3│ │ GPU3│</span>
+          <span class="dim">│ 80W │</span> <span class="highlight">│ 80W │</span> <span class="dim">│ 180W│ │ 180W│</span>
+          <span class="dim">└─────┘</span> <span class="highlight">└──┬──┘</span> <span class="dim">└─────┘ └─────┘</span>
+                      │
+                      ▼
+            <span class="highlight">┌───────────────────┐</span>
+            <span class="highlight">│   y = E_6(x)     │</span>      <span class="dim">E_6 selected: good affinity</span>
+            <span class="highlight">│                   │</span>      <span class="dim">AND low-power GPU</span>
+            <span class="highlight">└─────────┬─────────┘</span>
+                      │
+                      ▼
+                <span class="data">Output token</span>
+</pre>
+<div class="note">G(x) = Softmax(KeepTopK(x·W_g - λ·e, k)) — energy penalty biases toward low-power experts. No noise term.</div>
+</div>
+
+<!-- ============================================================ -->
+<div class="section">
+<div class="section-title">3. Training Loss (multi-objective)</div>
+<pre>
+   <span class="data">L_total  =  L_task</span>  +  <span class="router">α · L_balance</span>  +  <span class="energy">λ · L_energy</span>
+               <span class="data">│</span>            <span class="router">│</span>               <span class="energy">│</span>
+               <span class="data">│</span>            <span class="router">│</span>               <span class="energy">│</span>
+               <span class="data">▼</span>            <span class="router">▼</span>               <span class="energy">▼</span>
+     <span class="data">Cross-entropy</span>    <span class="router">Importance +</span>       <span class="energy">Σ(gate_i · e_i)</span>
+     <span class="data">next-token</span>       <span class="router">Load loss</span>          <span class="energy">over all tokens</span>
+     <span class="data">prediction</span>       <span class="router">(Shazeer 2017)</span>      <span class="energy">in batch</span>
+               <span class="data">│</span>            <span class="router">│</span>               <span class="energy">│</span>
+               <span class="data">│</span>            <span class="router">│</span>               <span class="energy">│</span>
+       <span class="data">"how good is</span>   <span class="router">"are experts</span>     <span class="energy">"how much power</span>
+       <span class="data"> the LM?"</span>      <span class="router"> balanced?"</span>      <span class="energy"> did we use?"</span>
+
+   <span class="dim">────────────────────────────────────────────────────────────</span>
+
+   Pareto frontier emerges by sweeping λ:
+
+     <span class="data">Perplexity</span>
+          │
+     30   │  <span class="data">●</span>                              λ = 0 (baseline)
+          │    <span class="data">●</span>
+     28   │       <span class="data">●</span>                           λ = 1e-5
+          │          <span class="highlight">●</span>
+     26   │             <span class="highlight">●</span>                      λ = 1e-4  ◄ sweet spot?
+          │                <span class="highlight">●</span>
+     24   │                   <span class="energy">●</span>                 λ = 1e-3
+          │                       <span class="energy">●</span>
+     22   │                            <span class="energy">●</span>        λ = 1e-2 (aggressive)
+          │
+          └────┬────┬────┬────┬────┬────┬──
+              100  200  300  400  500  600
+                    <span class="energy">Energy (Joules)</span>
+</pre>
+</div>
+
+<!-- ============================================================ -->
+<div class="section">
+<div class="section-title">4. Full model (Transformer with MoE layers)</div>
+<pre>
+    <span class="data">Input Tokens</span>
+         │
+         ▼
+   ┌───────────┐
+   │ Embedding  │
+   └─────┬─────┘
+         │
+   ╔═════╪═══════════════════════════════════╗
+   ║     ▼              <span class="dim">Transformer Block 1</span>  ║
+   ║ ┌──────────┐                            ║
+   ║ │Self-Attn │                            ║
+   ║ └────┬─────┘                            ║
+   ║      │                                  ║
+   ║      ▼                                  ║
+   ║ ┌──────────┐   <span class="dim">standard dense FFN</span>      ║
+   ║ │   FFN    │   <span class="dim">(no MoE here)</span>           ║
+   ║ └────┬─────┘                            ║
+   ╚══════╪══════════════════════════════════╝
+          │
+   ╔══════╪══════════════════════════════════╗
+   ║      ▼              <span class="energy">MoE Block 2</span>        ║
+   ║ ┌──────────┐                            ║
+   ║ │Self-Attn │                            ║
+   ║ └────┬─────┘                            ║
+   ║      │                                  ║
+   ║      ▼                                  ║
+   ║ <span class="router">┌──────────┐</span>    <span class="highlight">┌───┐┌───┐┌───┐┌───┐</span>  ║
+   ║ <span class="router">│  Router  │</span>───▶<span class="highlight">│E_1││E_2││E_3││E_4│</span>  ║
+   ║ <span class="router">│</span> <span class="energy">- λ·e</span>    <span class="router">│</span>    <span class="highlight">├───┤├───┤├───┤├───┤</span>  ║
+   ║ <span class="router">└──────────┘</span>    <span class="highlight">│E_5││E_6││E_7││E_8│</span>  ║
+   ║                  <span class="highlight">└───┘└───┘└───┘└───┘</span>  ║
+   ╚══════╪══════════════════════════════════╝
+          │
+   ╔══════╪══════════════════════════════════╗
+   ║      ▼              <span class="dim">Transformer Block 3</span>  ║
+   ║    ...              <span class="dim">(dense FFN)</span>         ║
+   ╚══════╪══════════════════════════════════╝
+          │
+   ╔══════╪══════════════════════════════════╗
+   ║      ▼              <span class="energy">MoE Block 4</span>        ║
+   ║    ...              <span class="energy">(every other layer)</span> ║
+   ╚══════╪══════════════════════════════════╝
+          │
+          ▼
+   ┌───────────┐
+   │  LM Head  │
+   └─────┬─────┘
+         │
+         ▼
+   <span class="data">Next token logits</span>
+</pre>
+<div class="note">MoE replaces the FFN in every other Transformer block (Switch Transformer pattern). Self-attention is shared; only the FFN is routed.</div>
+</div>
+
+</body>
+</html>
