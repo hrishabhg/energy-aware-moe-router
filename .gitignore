@@ -239,3 +239,4 @@ Thumbs.db
 # RunPod config (contains API key)
 scripts/runpod/.env.runpod
 logs/pipeline_status.json
+runpod_monitor_config.json

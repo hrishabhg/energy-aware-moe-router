@@ -344,6 +344,13 @@ if [ "$QUICK_TEST_FIRST" = "true" ]; then
     fi
 
     # Train just Switch on quick data to verify training loop
+    # Symlink quick data so train.py finds it at the config's expected path
+    if [ ! -d "./data/processed/c4_1pct" ] && [ -d "./data/processed/c4_quick" ]; then
+        ln -sfn "$(pwd)/data/processed/c4_quick" "./data/processed/c4_1pct"
+        echo "  [quick] Symlinked c4_quick → c4_1pct for quick test"
+        QUICK_SYMLINK=true
+    fi
+
     echo ""
     echo "--- Quick test: training Switch on 10K examples ---"
     python3 train.py \
@@ -393,6 +400,11 @@ except Exception as e:
     notify "Quick test passed. Starting full pipeline (~9-14 hours)."
 
     # Clean up quick test artifacts before full run
+    # Remove the symlink so the real c4_1pct download takes its place
+    if [ "${QUICK_SYMLINK:-}" = "true" ] && [ -L "./data/processed/c4_1pct" ]; then
+        rm -f "./data/processed/c4_1pct"
+        echo "  [quick] Removed c4_1pct symlink"
+    fi
     rm -rf results/m2/switch data/processed/c4_quick 2>/dev/null || true
 fi
 
