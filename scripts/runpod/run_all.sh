@@ -21,6 +21,7 @@
 #
 # Usage:
 #   bash scripts/runpod/run_all.sh              # interactive (see output)
+#   bash scripts/runpod/run_all.sh --debug      # NO auto-stop on failure (for debugging)
 #   nohup bash scripts/runpod/run_all.sh &      # background (go to sleep)
 # ============================================================
 set -uo pipefail
@@ -29,6 +30,16 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$PROJECT_DIR"
+
+# ── CLI flags ───────────────────────────────────────────────
+
+DEBUG_MODE=false
+if [[ "${1:-}" == "--debug" ]]; then
+    DEBUG_MODE=true
+    echo "*** DEBUG MODE: pod will NOT auto-stop on failure ***"
+    echo "*** SSH in anytime to check logs/run_all.log ***"
+    echo ""
+fi
 
 # ── Load config ──────────────────────────────────────────────
 
@@ -162,6 +173,16 @@ get_pod_id() {
 }
 
 stop_pod() {
+    if [ "$DEBUG_MODE" = "true" ]; then
+        echo ""
+        echo "============================================"
+        echo " DEBUG MODE: skipping auto-stop."
+        echo " Pod stays running. SSH in to inspect."
+        echo " Remember to stop manually when done!"
+        echo "============================================"
+        return
+    fi
+
     echo ""
     echo "============================================"
     echo " Auto-stopping pod..."
@@ -297,18 +318,27 @@ if [ "$QUICK_TEST_FIRST" = "true" ]; then
 
     # Setup
     bash scripts/runpod/00_setup.sh 2>&1 | tee logs/00_setup.log
-    if [ ${PIPESTATUS[0]} -ne 0 ]; then
-        notify "FAILED: setup failed during quick test"
-        write_status "failed" "quick_test" "Setup failed"
+    SETUP_EXIT=${PIPESTATUS[0]}
+    if [ $SETUP_EXIT -ne 0 ]; then
+        echo ""
+        echo "!!! SETUP FAILED (exit code $SETUP_EXIT) !!!"
+        echo "Last 20 lines of setup log:"
+        tail -20 logs/00_setup.log 2>/dev/null || true
+        notify "FAILED: setup failed (exit $SETUP_EXIT) during quick test"
+        write_status "failed" "quick_test" "Setup failed (exit $SETUP_EXIT)"
         stop_pod
         exit 1
     fi
 
     # Quick data
     bash scripts/runpod/01_data.sh --quick 2>&1 | tee logs/01_data_quick.log
-    if [ ${PIPESTATUS[0]} -ne 0 ]; then
-        notify "FAILED: data download failed during quick test"
-        write_status "failed" "quick_test" "Quick data download failed"
+    DATA_EXIT=${PIPESTATUS[0]}
+    if [ $DATA_EXIT -ne 0 ]; then
+        echo ""
+        echo "!!! DATA DOWNLOAD FAILED (exit code $DATA_EXIT) !!!"
+        tail -20 logs/01_data_quick.log 2>/dev/null || true
+        notify "FAILED: data download failed (exit $DATA_EXIT) during quick test"
+        write_status "failed" "quick_test" "Quick data download failed (exit $DATA_EXIT)"
         stop_pod
         exit 1
     fi
@@ -321,10 +351,14 @@ if [ "$QUICK_TEST_FIRST" = "true" ]; then
         --router switch \
         --seed 42 \
         2>&1 | tee logs/quick_test_train.log
+    TRAIN_EXIT=${PIPESTATUS[0]}
 
-    if [ ${PIPESTATUS[0]} -ne 0 ]; then
-        notify "FAILED: training loop broken — fix before full run"
-        write_status "failed" "quick_test" "Training failed on quick data"
+    if [ $TRAIN_EXIT -ne 0 ]; then
+        echo ""
+        echo "!!! TRAINING FAILED (exit code $TRAIN_EXIT) !!!"
+        tail -20 logs/quick_test_train.log 2>/dev/null || true
+        notify "FAILED: training loop broken (exit $TRAIN_EXIT) — fix before full run"
+        write_status "failed" "quick_test" "Training failed (exit $TRAIN_EXIT)"
         stop_pod
         exit 1
     fi
