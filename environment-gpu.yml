@@ -4,6 +4,13 @@
 # conda env create -f environment-gpu.yml
 # conda activate energy-moe
 # ============================================================
+#
+# NOTE (M2 update, Apr 2026):
+#   - DeepSpeed removed per advisor guidance — using pure PyTorch
+#     for the MoE implementation so every line is understood.
+#   - DeepSpeed can be pip-installed later if needed for multi-GPU
+#     data parallelism in M3+.
+# ============================================================
 
 name: energy-moe
 channels:
@@ -15,10 +22,10 @@ dependencies:
   - python=3.11
   - pip>=24.0
 
-  # CUDA toolkit — needed by DeepSpeed's JIT kernel compilation
+  # CUDA toolkit — needed for torch.cuda, pynvml, and custom kernels
   - cuda-toolkit=12.4
 
-  # C++ compiler for DeepSpeed ops
+  # C++ compiler (may be needed for custom CUDA extensions later)
   - gxx_linux-64>=12.0
 
   # Core ML (CUDA build)
@@ -51,7 +58,6 @@ dependencies:
       - wandb>=0.18.0
       - omegaconf>=2.3.0
       - rich>=13.0.0
-      # GPU-only
-      - deepspeed>=0.15.0,<0.17.0
+      # GPU energy monitoring
       - nvidia-ml-py>=12.560.30
       - pynvml>=11.5.0

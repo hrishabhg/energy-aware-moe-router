@@ -1,0 +1,183 @@
+# ============================================================
+# Tiny MoE — Shared testbed configuration for M2
+# ============================================================
+# All baselines and the energy-aware prototype use this config.
+# Do NOT create per-baseline config files — use --router flag.
+#
+# Usage:
+#   python train.py --config configs/tiny_moe.yaml --router switch
+#   python train.py --config configs/tiny_moe.yaml --router random
+#   python train.py --config configs/tiny_moe.yaml --router dense
+#   python train.py --config configs/tiny_moe.yaml --router energy_aware --lambda-energy 0.1
+#
+# ============================================================
+# Neural Network Layer Visualization
+# ============================================================
+#
+# Layer indices are 0-based. moe_layers: [2, 4] means the FFN
+# in blocks at index 2 and 4 is replaced by a MoE layer.
+# Pattern: Dense, Dense, MoE, Dense, MoE, Dense
+#
+#   Input tokens  [batch, seq_len=512]
+#        |
+#        v
+#   +------------------------------------+
+#   |  Token Embedding (vocab -> 256)    |
+#   |  + Positional Embedding (512->256) |
+#   +------------------------------------+
+#        |
+#        v
+#   +====================================+
+#   |  Block 0 (Dense FFN)               |
+#   |  +------------------------------+  |
+#   |  | LayerNorm                     |  |
+#   |  | MultiHeadAttn (4 heads)       |  |
+#   |  |   d_k = d_v = 256/4 = 64     |  |
+#   |  | + Residual + Dropout(0.1)     |  |
+#   |  +------------------------------+  |
+#   |  | LayerNorm                     |  |
+#   |  | FFN: 256 -> 1024 -> 256       |  |
+#   |  |   (GELU activation)          |  |
+#   |  | + Residual + Dropout(0.1)     |  |
+#   |  +------------------------------+  |
+#   +====================================+
+#        |
+#        v
+#   +====================================+
+#   |  Block 1 (Dense FFN)               |
+#   |  (same structure as Block 0)       |
+#   +====================================+
+#        |
+#        v
+#   +============================================================+
+#   |  Block 2 (MoE)  <-- moe_layers[0]                         |
+#   |  +------------------------------+                          |
+#   |  | LayerNorm                     |                          |
+#   |  | MultiHeadAttn (4 heads)       |  attention is unchanged  |
+#   |  | + Residual + Dropout          |                          |
+#   |  +------------------------------+                          |
+#   |  | LayerNorm                     |                          |
+#   |  | +-------------------------+   |                          |
+#   |  | | Router / Gating         |   |                          |
+#   |  | | x @ W_g -> logits       |   |                          |
+#   |  | | (- lambda * e_gpu       |   |  <-- energy penalty here |
+#   |  | |  if energy-aware)       |   |                          |
+#   |  | | TopK(logits, k=1)       |   |                          |
+#   |  | +------------+------------+   |                          |
+#   |  |              | dispatch       |                          |
+#   |  |     +--------+--------+       |                          |
+#   |  |     |    |    |    |          |                          |
+#   |  |     v    v    v    v          |                          |
+#   |  |   +--+ +--+ +--+ +--+        |  4 experts, each:        |
+#   |  |   |E0| |E1| |E2| |E3|        |  FFN 256 -> 1024 -> 256  |
+#   |  |   +--+ +--+ +--+ +--+        |                          |
+#   |  |     |    |    |    |          |  k=1: only 1 expert runs |
+#   |  |     +--------+--------+       |  per token (sparse)      |
+#   |  |              | combine        |                          |
+#   |  |              v                |                          |
+#   |  | + Residual + Dropout          |                          |
+#   |  +------------------------------+                          |
+#   +============================================================+
+#        |
+#        v
+#   +====================================+
+#   |  Block 3 (Dense FFN)               |
+#   +====================================+
+#        |
+#        v
+#   +============================================================+
+#   |  Block 4 (MoE)  <-- moe_layers[1]                         |
+#   |  (same structure as Block 2)                               |
+#   +============================================================+
+#        |
+#        v
+#   +====================================+
+#   |  Block 5 (Dense FFN)               |
+#   +====================================+
+#        |
+#        v
+#   +------------------------------------+
+#   |  Final LayerNorm                   |
+#   +------------------------------------+
+#        |
+#        v
+#   +------------------------------------+
+#   |  LM Head (256 -> vocab_size)       |
+#   |  (weight-tied with embedding)      |
+#   +------------------------------------+
+#        |
+#        v
+#   Output logits  [batch, seq_len, vocab_size]
+#
+# ============================================================
+# Parameter count (approximate):
+#   Embedding:       vocab_size x 256      (~8.2M for T5 vocab 32128)
+#   Per dense block: 4 x 256^2 (attn) + 2 x 256 x 1024 (FFN)    ~ 787K
+#   Per MoE block:   4 x 256^2 (attn) + 4 x (2 x 256 x 1024)    ~ 2.36M
+#   Total: ~8.2M (emb) + 4 x 0.79M (dense) + 2 x 2.36M (MoE)   ~ 15.9M
+#
+# Loss function:
+#   L = L_task + α·L_balance + β·L_energy
+#   where L_task = cross-entropy (next-token prediction)
+#         L_balance = CV(expert_load)² to prevent collapse
+#         L_energy = mean(routed expert energy costs)
+# ============================================================
+
+# --- Model architecture ---
+model:
+  d_model: 256
+  n_heads: 4
+  n_layers: 6
+  d_ff: 1024              # FFN hidden dimension (per expert)
+  dropout: 0.1
+  max_seq_len: 512
+  vocab_size: null         # Auto-filled from tokenizer at runtime
+
+# --- MoE configuration ---
+moe:
+  num_experts: 4
+  moe_layers: [2, 4]      # 0-indexed layer indices where FFN → MoE
+  top_k: 1                # k=1 by default (Switch-style); override for k=2 experiments
+  # Loss coefficients
+  alpha_balance: 0.01     # Load-balance loss weight (per Fedus 2022)
+  beta_energy: 0.0        # Energy loss weight (0 = disabled for baselines)
+
+# --- Energy-aware routing ---
+energy:
+  lambda_energy: 0.0      # Inference-time energy penalty in logits (0 = standard routing)
+  sampling_hz: 10         # pynvml polling frequency
+  normalize: true         # Normalize e_gpu to [0, 1] range by TDP
+
+# --- Data ---
+data:
+  arrow_dir: ./data/processed/c4_1pct
+  tokenizer_name: google-t5/t5-small
+  seq_len: 512
+  batch_size: 32
+  num_workers: 4
+  prefetch_factor: 2
+  seed: 42
+
+# --- Training ---
+training:
+  max_tokens: 50_000_000  # Total token budget per run (~50M)
+  lr: 3.0e-4
+  weight_decay: 0.01
+  warmup_tokens: 1_000_000
+  grad_clip: 1.0
+  seed: 42
+  dtype: float16           # AMP mixed precision
+  compile: false           # torch.compile — enable if PyTorch >= 2.4
+
+# --- Logging ---
+logging:
+  wandb_project: energy-aware-moe
+  wandb_entity: null       # Set to your wandb username or team
+  log_interval: 100        # Log every N steps
+  eval_interval: 1000      # Evaluate every N steps
+  save_interval: 5000      # Checkpoint every N steps
+
+# --- Output ---
+output:
+  dir: ./results/m2
+  checkpoint_dir: ./results/m2/checkpoints

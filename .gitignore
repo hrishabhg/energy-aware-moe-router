@@ -233,3 +233,9 @@ checkpoints/
 # OS
 .DS_Store
 Thumbs.db
+
+.env.local
+
+# RunPod config (contains API key)
+scripts/runpod/.env.runpod
+logs/pipeline_status.json
