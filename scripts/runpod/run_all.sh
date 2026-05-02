@@ -57,21 +57,26 @@ START_TIME=$(date +%s)
 STATUS_FILE="logs/pipeline_status.json"
 mkdir -p logs
 
+pycalc() {
+    # Drop-in replacement for bc — always available on RunPod
+    python3 -c "print(round($1, 2))"
+}
+
 write_status() {
     local status=$1
     local stage=$2
     local message=$3
     local now=$(date +%s)
     local elapsed=$(( now - START_TIME ))
-    local hours_elapsed=$(echo "scale=2; $elapsed / 3600" | bc)
-    local cost_est=$(echo "scale=2; $hours_elapsed * $GPU_RATE_PER_HOUR" | bc)
+    local hours_elapsed=$(pycalc "$elapsed / 3600")
+    local cost_est=$(pycalc "$hours_elapsed * $GPU_RATE_PER_HOUR")
 
     cat > "$STATUS_FILE" <<STATUSEOF
 {
     "status": "$status",
     "current_stage": "$stage",
     "message": "$message",
-    "started_at": "$(date -d @$START_TIME 2>/dev/null || date -r $START_TIME)",
+    "started_at": "$(date -d @$START_TIME 2>/dev/null || date -r $START_TIME 2>/dev/null || echo unknown)",
     "updated_at": "$(date)",
     "elapsed_seconds": $elapsed,
     "elapsed_hours": $hours_elapsed,
@@ -86,11 +91,11 @@ STATUSEOF
 check_budget() {
     local now=$(date +%s)
     local elapsed=$(( now - START_TIME ))
-    local hours_elapsed=$(echo "scale=2; $elapsed / 3600" | bc)
-    local cost_est=$(echo "scale=2; $hours_elapsed * $GPU_RATE_PER_HOUR" | bc)
+    local hours_elapsed=$(pycalc "$elapsed / 3600")
+    local cost_est=$(pycalc "$hours_elapsed * $GPU_RATE_PER_HOUR")
 
-    # Check if we've exceeded the budget
-    local over=$(echo "$cost_est >= $BUDGET_LIMIT_USD" | bc)
+    # Python returns "True"/"False" — check if over budget
+    local over=$(python3 -c "print(1 if $cost_est >= $BUDGET_LIMIT_USD else 0)")
     if [ "$over" -eq 1 ]; then
         echo ""
         echo "BUDGET LIMIT REACHED: \$$cost_est >= \$$BUDGET_LIMIT_USD"
@@ -99,10 +104,10 @@ check_budget() {
     fi
 
     # Warn if within 20% of budget
-    local warn_threshold=$(echo "scale=2; $BUDGET_LIMIT_USD * 0.80" | bc)
-    local near=$(echo "$cost_est >= $warn_threshold" | bc)
+    local near=$(python3 -c "print(1 if $cost_est >= $BUDGET_LIMIT_USD * 0.80 else 0)")
     if [ "$near" -eq 1 ]; then
-        echo "  [budget] WARNING: \$$cost_est / \$$BUDGET_LIMIT_USD ($(echo "scale=0; $cost_est * 100 / $BUDGET_LIMIT_USD" | bc)%)"
+        local pct=$(python3 -c "print(int($cost_est * 100 / $BUDGET_LIMIT_USD))")
+        echo "  [budget] WARNING: \$$cost_est / \$$BUDGET_LIMIT_USD (${pct}%)"
     else
         echo "  [budget] \$$cost_est / \$$BUDGET_LIMIT_USD"
     fi
@@ -142,41 +147,49 @@ notify() {
 
 # ── Pod control ──────────────────────────────────────────────
 
+get_pod_id() {
+    # RunPod injects RUNPOD_POD_ID into the container environment
+    if [ -n "${RUNPOD_POD_ID:-}" ]; then
+        echo "$RUNPOD_POD_ID"
+        return
+    fi
+    # Fallback: check /etc/hostname or env
+    if [ -f /etc/runpod_pod_id ]; then
+        cat /etc/runpod_pod_id
+        return
+    fi
+    echo ""
+}
+
 stop_pod() {
     echo ""
     echo "============================================"
     echo " Auto-stopping pod..."
     echo "============================================"
 
-    # Method 1: runpodctl (if installed)
-    if command -v runpodctl &> /dev/null; then
-        local pod_id="${RUNPOD_POD_ID:-}"
-        if [ -z "$pod_id" ]; then
-            # Try to get pod ID from hostname (RunPod sets it)
-            pod_id=$(hostname | grep -oP '^[a-z0-9]+' || echo "")
-        fi
-        if [ -n "$pod_id" ]; then
-            echo "Stopping pod $pod_id via runpodctl..."
-            runpodctl stop pod "$pod_id" 2>/dev/null || true
-            return
-        fi
+    local pod_id
+    pod_id=$(get_pod_id)
+
+    # Method 1: RunPod API (most reliable)
+    if [ -n "${RUNPOD_API_KEY:-}" ] && [ "$RUNPOD_API_KEY" != "your-api-key-here" ] && [ -n "$pod_id" ]; then
+        echo "Stopping pod $pod_id via API..."
+        curl -s -X POST "https://api.runpod.io/graphql?api_key=$RUNPOD_API_KEY" \
+            -H 'Content-Type: application/json' \
+            -d "{\"query\": \"mutation { podStop(input: {podId: \\\"$pod_id\\\"}) { id } }\"}" \
+            2>&1 || true
+        echo "Stop request sent."
+        return
     fi
 
-    # Method 2: RunPod API (if API key is set)
-    if [ -n "${RUNPOD_API_KEY:-}" ] && [ "$RUNPOD_API_KEY" != "your-api-key-here" ]; then
-        local pod_id="${RUNPOD_POD_ID:-$(hostname | grep -oP '^[a-z0-9]+' || echo "")}"
-        if [ -n "$pod_id" ]; then
-            echo "Stopping pod $pod_id via API..."
-            curl -s -X POST "https://api.runpod.io/graphql?api_key=$RUNPOD_API_KEY" \
-                -H 'Content-Type: application/json' \
-                -d "{\"query\": \"mutation { podStop(input: {podId: \\\"$pod_id\\\"}) { id } }\"}" \
-                > /dev/null 2>&1 || true
-            return
-        fi
+    # Method 2: runpodctl (if installed and configured)
+    if command -v runpodctl &> /dev/null && [ -n "$pod_id" ]; then
+        echo "Stopping pod $pod_id via runpodctl..."
+        runpodctl stop pod "$pod_id" 2>/dev/null || true
+        return
     fi
 
     # Method 3: Fallback — just shut down (this stops billing)
-    echo "Could not auto-stop via API. Shutting down system..."
+    echo "Could not auto-stop via API (pod_id=${pod_id:-unknown}). Shutting down system..."
     echo "If this doesn't work, the pod will keep running. Check RunPod dashboard."
     sudo shutdown -h +1 "M2 pipeline complete. Auto-shutdown in 1 minute." 2>/dev/null || true
 }
@@ -381,8 +394,8 @@ bash scripts/runpod/06_package.sh 2>&1 | tee logs/06_package.log
 
 NOW=$(date +%s)
 TOTAL_ELAPSED=$(( NOW - START_TIME ))
-TOTAL_HOURS=$(echo "scale=2; $TOTAL_ELAPSED / 3600" | bc)
-TOTAL_COST=$(echo "scale=2; $TOTAL_HOURS * $GPU_RATE_PER_HOUR" | bc)
+TOTAL_HOURS=$(pycalc "$TOTAL_ELAPSED / 3600")
+TOTAL_COST=$(pycalc "$TOTAL_HOURS * $GPU_RATE_PER_HOUR")
 
 echo ""
 echo "============================================================"
