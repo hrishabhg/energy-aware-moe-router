@@ -1,0 +1,14 @@
+{
+  "wall_seconds": 198.02,
+  "samples_taken": 1975,
+  "sampling_overhead_pct": 0.0168,
+  "devices": {
+    "0": {
+      "total_joules": 59096.78,
+      "mean_watts": 298.79,
+      "max_watts": 355.28,
+      "min_watts": 89.75,
+      "num_readings": 1975
+    }
+  }
+}
