@@ -6,14 +6,14 @@ Run these scripts **in order** on your RunPod instance. Each script logs to `log
 
 | Script | What it does | Time (A100) | Run once? |
 |--------|-------------|-------------|-----------|
-| `run_all.sh` | **Full autonomous pipeline** (recommended) | 9-14 hours | Yes |
-| `00_setup.sh` | Install deps, verify GPU + pynvml | 2 min | Yes (persists on Stop) |
-| `01_data.sh` | Download C4 1% subsample | 2-4 hours | Yes (persists on Stop) |
-| `02_baselines.sh` | Train Switch, Random, Dense | 2-3 hours | Yes |
-| `03_energy_sweep.sh` | Train 7 lambda values | 4-7 hours | Yes |
-| `04_evaluate.sh` | Evaluate all checkpoints | 10-20 min | Yes |
-| `05_plot.sh` | Generate Pareto + training plots | 1 min | Re-run anytime |
-| `06_package.sh` | Bundle results for download | 1 min | Before terminating |
+| `run_all.sh` | **Full autonomous pipeline** (recommended) | 9-14 hours  | Yes |
+| `00_setup.sh` | Install deps, verify GPU + pynvml | 2 min       | Yes (persists on Stop) |
+| `01_data.sh` | Download C4 subsample (500K examples, fast mode) | 15-25 min   | Yes (persists on Stop) |
+| `02_baselines.sh` | Train Switch, Random, Dense | 2-3 hours   | Yes |
+| `03_energy_sweep.sh` | Train 7 lambda values | 4-7 hours   | Yes |
+| `04_evaluate.sh` | Evaluate all checkpoints | 10-20 min   | Yes |
+| `05_plot.sh` | Generate Pareto + training plots | 1 min       | Re-run anytime |
+| `06_package.sh` | Bundle results for download | 1 min       | Before terminating |
 
 **Total estimated GPU time: ~9-14 hours on A100 SXM (~$13-21 at $1.49/hr community pricing)**
 
@@ -109,6 +109,33 @@ bash scripts/runpod/02_baselines.sh switch  # single baseline only
 
 - **Stop** (between sessions): Keeps disk, stops GPU billing (~$0.10/GB/month storage)
 - **Terminate** (after M2): Destroys everything. Download bundle first!
+
+## Known Gotchas
+
+**C4 download mode matters hugely.** The hash-based sampling modes
+(`--streaming-subsample` and the default full-download path) scan *all*
+7,168 C4 shards to decide which examples to keep. On a single node this
+takes 100+ hours — we burned 8 hours on an A100 and only reached shard
+518/7168 (7.2%). Always use `--fast` mode, which reads shards sequentially
+and stops at the target count. 500K examples (~15 min) gives ~100M tokens,
+plenty for our 16M-param models.
+
+**First tokenization is slow.** `data_loader.py` tokenizes and packs the
+entire dataset on first use (~20-30 min for 500K examples). The result is
+cached, so subsequent runs (including all training scripts) load instantly.
+This happens during the smoke test in `01_data.sh` — don't kill it if logs
+appear stuck.
+
+**`bc` is not available on RunPod.** All arithmetic in `run_all.sh` uses
+`python3 -c` instead. If you add new shell math, use the `pycalc()` helper.
+
+**PyTorch `total_mem` vs `total_memory`.** Newer PyTorch versions (≥2.4)
+renamed the property. Use `getattr(props, 'total_memory', None) or
+getattr(props, 'total_mem', 0)` for compatibility.
+
+**Pod GPU re-allocation.** If you Stop a pod and Start it later, RunPod may
+assign a different GPU or fail to allocate one entirely. Use the Migrate
+option in the dashboard if your pod shows "GPU unavailable."
 
 ## If something fails
 

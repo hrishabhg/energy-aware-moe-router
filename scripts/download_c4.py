@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 """
-Download the C4 (en.noclean) dataset and create a 1% random subsample.
+Download the C4 (en.noclean) dataset and create a subsample for training.
 
 Usage
 -----
-# Full download + subsample (default):
+# RECOMMENDED — fast sequential download (500K examples, ~15-25 min):
+    python scripts/download_c4.py --fast
+
+# Custom example count:
+    python scripts/download_c4.py --fast --max-examples 200000
+
+# Full download + hash-based 1% subsample (legacy, needs 750GB disk):
     python scripts/download_c4.py
 
-# Custom subsample ratio and seed:
-    python scripts/download_c4.py --ratio 0.01 --seed 42 --cache-dir ./data/raw
-
-# Skip the full download if you only want streaming (subsample only):
+# Streaming hash-based subsample (no full download, but VERY slow):
     python scripts/download_c4.py --streaming-subsample --ratio 0.01
 
 Notes
@@ -22,6 +25,20 @@ Notes
 - We use a deterministic hash-based sampling strategy so the subsample is
   reproducible across machines without needing to shuffle the full dataset
   into memory.
+
+IMPORTANT — why --fast exists
+-----------------------------
+The hash-based modes (default and --streaming-subsample) compute
+MD5(seed || text[:512]) for every example to decide keep/drop.  This
+requires scanning ALL 7,168 C4 shards even for a 1% sample.  In practice
+this takes 100-110+ hours on a single node over the network — we learned
+this the hard way when a RunPod A100 run spent 8+ hours and only reached
+shard 518/7168 (7.2%).
+
+--fast avoids this entirely: it reads shards sequentially and stops as soon
+as it has enough examples.  500K examples ≈ 100M tokens, more than enough
+for our 16M-param models training on 50M tokens, and completes in ~15-20
+minutes.
 """
 
 import argparse
