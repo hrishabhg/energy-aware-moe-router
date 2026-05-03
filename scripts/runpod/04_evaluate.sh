@@ -46,7 +46,8 @@ evaluate_checkpoint() {
         --checkpoint "$ckpt" \
         --data-dir ./data/processed/c4_1pct \
         --output "$output" \
-        --batch-size 64
+        --batch-size 64 \
+        --max-batches 2000
 
     # Append to combined file (flatten JSON to single line)
     python3 -c "
