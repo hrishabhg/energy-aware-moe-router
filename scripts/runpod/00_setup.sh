@@ -26,6 +26,16 @@ echo "============================================"
 # Create logs directory
 mkdir -p logs
 
+# ── Load .env.runpod if present (for HF_TOKEN, etc.) ──
+if [ -f scripts/runpod/.env.runpod ]; then
+    echo "--- Loading config from .env.runpod ---"
+    source scripts/runpod/.env.runpod
+    if [ -n "${HF_TOKEN:-}" ]; then
+        export HF_TOKEN
+        echo "HF_TOKEN set (faster HuggingFace downloads, no rate limits)"
+    fi
+fi
+
 # ── Check GPU ──
 echo ""
 echo "--- GPU Check ---"
@@ -49,7 +59,8 @@ pip install --quiet \
     pynvml>=11.5.0 \
     pyyaml>=6.0 \
     scipy>=1.12.0 \
-    seaborn>=0.13.0
+    seaborn>=0.13.0 \
+    matplotlib>=3.8.0
 
 echo ""
 echo "--- Verifying imports ---"
