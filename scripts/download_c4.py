@@ -103,6 +103,9 @@ def create_subsample_streaming(
 
     This is much friendlier on disk (only the subsample is persisted) but
     slower because every example must be fetched over the network.
+
+    WARNING: With ratio=0.01 and no max_examples, this scans ALL 7,168
+    shards (~100+ hours). Use --fast mode or set --max-examples instead.
     """
     from datasets import load_dataset, Dataset
 
@@ -139,6 +142,48 @@ def create_subsample_streaming(
     ds = Dataset.from_list(kept)
     ds.save_to_disk(str(out))
     log.info(f"Saved subsample to {out}")
+
+
+def create_subsample_fast(
+    output_dir: str, max_examples: int = 500_000
+) -> None:
+    """Take the first N examples sequentially from C4 streaming.
+
+    This is MUCH faster than hash-based sampling because it reads shards
+    sequentially and stops as soon as it has enough data. No need to scan
+    all 7,168 shards.
+
+    500K examples ≈ 100M tokens — more than enough for a 16M param model
+    training on 50M tokens. Takes ~15-20 minutes vs 100+ hours for full scan.
+    """
+    from datasets import load_dataset, Dataset
+
+    log.info(
+        f"Fast sequential download: taking first {max_examples:,} examples from C4 en.noclean"
+    )
+    stream = load_dataset(
+        "allenai/c4",
+        "en.noclean",
+        split="train",
+        streaming=True,
+        trust_remote_code=True,
+    )
+
+    kept: list[dict] = []
+    for i, example in enumerate(stream):
+        if i >= max_examples:
+            break
+        kept.append(example)
+        if (i + 1) % 50_000 == 0:
+            log.info(f"  … collected {i + 1:,} / {max_examples:,} examples")
+
+    log.info(f"Collected {len(kept):,} examples")
+
+    out = Path(output_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    ds = Dataset.from_list(kept)
+    ds.save_to_disk(str(out))
+    log.info(f"Saved to {out}")
 
 
 # ---------------------------------------------------------------------------
@@ -226,10 +271,23 @@ def main():
         action="store_true",
         help="Skip the post-download sanity checks.",
     )
+    parser.add_argument(
+        "--fast",
+        action="store_true",
+        help="Fast sequential download: take the first N examples without "
+        "hash-sampling across all shards. Much faster (~15-20 min vs 100+ hrs). "
+        "Use --max-examples to control how many (default: 500K).",
+    )
 
     args = parser.parse_args()
 
-    if args.streaming_subsample:
+    if args.fast:
+        max_ex = args.max_examples if args.max_examples > 0 else 500_000
+        create_subsample_fast(
+            output_dir=args.output_dir,
+            max_examples=max_ex,
+        )
+    elif args.streaming_subsample:
         create_subsample_streaming(
             ratio=args.ratio,
             seed=args.seed,

@@ -1,9 +1,9 @@
 #!/bin/bash
 # ============================================================
-# 01_data.sh — Download C4 1% subsample + smoke test
+# 01_data.sh — Download C4 subsample + smoke test
 # ============================================================
-# Downloads ~3.6M examples via streaming (no 750GB full download).
-# Takes 2-4 hours. Run once; data persists if you Stop the pod.
+# Downloads 500K examples via fast sequential mode (~15-20 min).
+# 500K docs ≈ 100M tokens — more than enough for a 16M param model.
 #
 # For a quick test first (5 min), run with --quick flag:
 #   bash scripts/runpod/01_data.sh --quick
@@ -30,15 +30,13 @@ mkdir -p logs data/processed
 if [ "$QUICK" = true ]; then
     echo "--- Downloading quick test subset (10K examples) ---"
     python3 scripts/download_c4.py \
-        --streaming-subsample \
-        --ratio 0.01 \
-        --seed 42 \
+        --fast \
         --max-examples 10000 \
         --output-dir ./data/processed/c4_quick
 
     DATA_DIR="./data/processed/c4_quick"
 else
-    if [ -d "./data/processed/c4_1pct/dataset_info.json" ] || [ -d "./data/processed/c4_1pct" ]; then
+    if [ -d "./data/processed/c4_1pct" ]; then
         echo "--- c4_1pct already exists, checking ---"
         python3 -c "
 from datasets import load_from_disk
@@ -50,23 +48,24 @@ else:
     print('Too small. Re-downloading.')
     exit(1)
 " && { echo "Skipping download."; DATA_DIR="./data/processed/c4_1pct"; } || {
-            echo "--- Downloading full 1% subsample (~3.6M examples) ---"
-            echo "This will take 2-4 hours. Go do something else."
+            echo "--- Downloading 500K examples via fast sequential mode ---"
+            echo "This takes ~15-20 minutes."
+            rm -rf ./data/processed/c4_1pct
             python3 scripts/download_c4.py \
-                --streaming-subsample \
-                --ratio 0.01 \
-                --seed 42 \
-                --output-dir ./data/processed/c4_1pct
+                --fast \
+                --max-examples 500000 \
+                --output-dir ./data/processed/c4_1pct \
+                --skip-validation
             DATA_DIR="./data/processed/c4_1pct"
         }
     else
-        echo "--- Downloading full 1% subsample (~3.6M examples) ---"
-        echo "This will take 2-4 hours. Go do something else."
+        echo "--- Downloading 500K examples via fast sequential mode ---"
+        echo "This takes ~15-20 minutes."
         python3 scripts/download_c4.py \
-            --streaming-subsample \
-            --ratio 0.01 \
-            --seed 42 \
-            --output-dir ./data/processed/c4_1pct
+            --fast \
+            --max-examples 500000 \
+            --output-dir ./data/processed/c4_1pct \
+            --skip-validation
         DATA_DIR="./data/processed/c4_1pct"
     fi
     DATA_DIR="./data/processed/c4_1pct"
